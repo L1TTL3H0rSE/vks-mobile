@@ -2,26 +2,25 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { router } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
 import {
-  ImageBackground,
   Pressable,
   ScrollView,
   StyleSheet,
   Text,
   View,
 } from "react-native";
-import { Camera, LogOut, Mic, Settings } from "lucide-react-native";
+import { LogOut } from "lucide-react-native";
 import Toast from "react-native-toast-message";
 import { useAuthStore } from "@/auth/authStore";
+import { idApi } from "@/api/idApi";
 import { vksApi } from "@/api/vksApi";
 import type { Room } from "@/api/types";
 import { AppButton } from "@/components/AppButton";
 import { ConfirmModal } from "@/components/ConfirmModal";
+import { LocalPreviewCard } from "@/components/LocalPreviewCard";
 import { RoomFormModal } from "@/components/RoomFormModal";
 import { RoomList } from "@/components/RoomList";
 import { IconCircleButton, Screen, StateView } from "@/components/ui";
 import { colors, radius, spacing, typography } from "@/theme/tokens";
-
-const lobbyHero = require("../../assets/figma/lobby-hero.png");
 
 export function LobbyScreen() {
   const status = useAuthStore((state) => state.status);
@@ -62,6 +61,11 @@ export function LobbyScreen() {
     queryKey: ["rooms", debouncedSearch],
     queryFn: async () => (await vksApi.getAvailableRooms(debouncedSearch)).data,
     enabled: isAuthenticated,
+  });
+  const profileQuery = useQuery({
+    queryKey: ["profile", user?.id],
+    queryFn: () => idApi.readPublicProfile(user?.id ?? ""),
+    enabled: isAuthenticated && !!user?.id,
   });
 
   const createRoom = useMutation({
@@ -109,32 +113,11 @@ export function LobbyScreen() {
             contentContainerStyle={styles.content}
             showsVerticalScrollIndicator={false}
           >
-            <ImageBackground
-              imageStyle={styles.heroImage}
-              resizeMode="cover"
-              source={lobbyHero}
-              style={styles.hero}
-            >
-              <View style={styles.heroShade} />
-              <View style={styles.heroControls}>
-                <View style={styles.callGroup}>
-                  <IconCircleButton size={36}>
-                    <Mic color={colors.textLight} size={18} />
-                  </IconCircleButton>
-                  <IconCircleButton size={36}>
-                    <Camera color={colors.textLight} size={18} />
-                  </IconCircleButton>
-                </View>
-                <IconCircleButton
-                  accessibilityLabel="Настройки"
-                  size={36}
-                  style={styles.heroSettings}
-                  onPress={() => router.push("/settings")}
-                >
-                  <Settings color={colors.textLight} size={18} />
-                </IconCircleButton>
-              </View>
-            </ImageBackground>
+            <LocalPreviewCard
+              profile={profileQuery.data}
+              user={user}
+              onSettings={() => router.push("/settings")}
+            />
 
             <View style={styles.roomsPanel}>
               <View style={styles.panelTop}>
@@ -243,34 +226,6 @@ const styles = StyleSheet.create({
     gap: spacing.xl,
     padding: spacing.xl,
     paddingBottom: spacing.xxxl,
-  },
-  hero: {
-    aspectRatio: 335 / 531,
-    justifyContent: "flex-end",
-    overflow: "hidden",
-    padding: spacing.md,
-    width: "100%",
-  },
-  heroImage: {
-    borderRadius: radius.lg,
-  },
-  heroShade: {
-    ...StyleSheet.absoluteFill,
-    backgroundColor: "rgba(0,0,0,0.18)",
-    borderRadius: radius.lg,
-  },
-  heroControls: {
-    alignItems: "center",
-    flexDirection: "row",
-    justifyContent: "space-between",
-    width: "100%",
-  },
-  callGroup: {
-    flexDirection: "row",
-    gap: spacing.md,
-  },
-  heroSettings: {
-    borderRadius: radius.md,
   },
   roomsPanel: {
     backgroundColor: colors.surface,
