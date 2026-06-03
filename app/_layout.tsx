@@ -6,6 +6,7 @@ import { useState } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import Toast from "react-native-toast-message";
+import { AuthGate } from "@/auth/AuthGate";
 
 export default function RootLayout() {
   const [queryClient] = useState(
@@ -31,6 +32,7 @@ export default function RootLayout() {
                 contentStyle: { backgroundColor: "#f8fafd" },
               }}
             />
+            <AuthGate />
             <StatusBar style="dark" />
             <Toast />
           </BottomSheetModalProvider>
