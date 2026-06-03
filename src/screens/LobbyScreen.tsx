@@ -1,8 +1,15 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { router } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
-import { Settings, LogOut, Plus } from "lucide-react-native";
+import {
+  ImageBackground,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
+import { Camera, LogOut, Mic, Settings } from "lucide-react-native";
 import Toast from "react-native-toast-message";
 import { useAuthStore } from "@/auth/authStore";
 import { vksApi } from "@/api/vksApi";
@@ -11,8 +18,10 @@ import { AppButton } from "@/components/AppButton";
 import { ConfirmModal } from "@/components/ConfirmModal";
 import { RoomFormModal } from "@/components/RoomFormModal";
 import { RoomList } from "@/components/RoomList";
-import { Card, IconCircleButton, Screen, StateView } from "@/components/ui";
-import { colors, spacing, typography } from "@/theme/tokens";
+import { IconCircleButton, Screen, StateView } from "@/components/ui";
+import { colors, radius, spacing, typography } from "@/theme/tokens";
+
+const lobbyHero = require("../../assets/figma/lobby-hero.png");
 
 export function LobbyScreen() {
   const status = useAuthStore((state) => state.status);
@@ -96,63 +105,91 @@ export function LobbyScreen() {
         <StateView title="Загрузка" text="Проверяем сессию" loading />
       ) : isAuthenticated ? (
         <>
-          <Card style={styles.header}>
-            <View style={styles.headerText}>
-              <Text style={styles.eyebrow}>Мобильная ВКС</Text>
-              <Text style={styles.title}>Kosygin VCS</Text>
-              <Text style={styles.text}>
-                {user?.name ?? user?.username ?? "Вы авторизованы"}
+          <ScrollView
+            contentContainerStyle={styles.content}
+            showsVerticalScrollIndicator={false}
+          >
+            <ImageBackground
+              imageStyle={styles.heroImage}
+              resizeMode="cover"
+              source={lobbyHero}
+              style={styles.hero}
+            >
+              <View style={styles.heroShade} />
+              <View style={styles.heroControls}>
+                <View style={styles.callGroup}>
+                  <IconCircleButton size={36}>
+                    <Mic color={colors.textLight} size={18} />
+                  </IconCircleButton>
+                  <IconCircleButton size={36}>
+                    <Camera color={colors.textLight} size={18} />
+                  </IconCircleButton>
+                </View>
+                <IconCircleButton
+                  accessibilityLabel="Настройки"
+                  size={36}
+                  style={styles.heroSettings}
+                  onPress={() => router.push("/settings")}
+                >
+                  <Settings color={colors.textLight} size={18} />
+                </IconCircleButton>
+              </View>
+            </ImageBackground>
+
+            <View style={styles.roomsPanel}>
+              <View style={styles.panelTop}>
+                <View style={styles.panelText}>
+                  <Text style={styles.sectionTitle}>Ваши комнаты</Text>
+                  <Text style={styles.panelDescription}>
+                    Комнаты, доступные для ваших студентов. Можно создать
+                    дополнительные
+                  </Text>
+                </View>
+                <IconCircleButton
+                  accessibilityLabel="Выйти"
+                  tone="light"
+                  size={34}
+                  onPress={() => void logout()}
+                >
+                  <LogOut color={colors.primaryDark} size={17} />
+                </IconCircleButton>
+              </View>
+              {canCreate ? (
+                <AppButton title="Создать" onPress={() => setCreateVisible(true)} />
+              ) : null}
+              {roomsQuery.isLoading ? (
+                <StateView title="Загрузка комнат" loading />
+              ) : roomsQuery.isError ? (
+                <StateView
+                  title="Не удалось загрузить комнаты"
+                  text="Проверьте подключение и попробуйте еще раз"
+                  action={<AppButton title="Повторить" onPress={() => void roomsQuery.refetch()} />}
+                />
+              ) : (
+                <RoomList
+                  rooms={roomsQuery.data ?? []}
+                  search={search}
+                  onSearchChange={setSearch}
+                  onDelete={setDeleteTarget}
+                  refreshing={roomsQuery.isRefetching}
+                  onRefresh={() => void roomsQuery.refetch()}
+                />
+              )}
+            </View>
+
+            <View style={styles.footer}>
+              <View style={styles.logoRow}>
+                <View style={styles.logoMark} />
+                <Text style={styles.logoText}>УНИВЕРСИТЕТ{"\n"}КОСЫГИНА</Text>
+              </View>
+              <Text style={styles.footerText}>
+                119071, г. Москва, ул. Малая Калужская, д.1
+              </Text>
+              <Text style={styles.footerText}>
+                © 2022-2024 ФГБОУ ВО РГУ им. А.Н. Косыгина
               </Text>
             </View>
-            <View style={styles.headerActions}>
-              <IconCircleButton
-                accessibilityLabel="Настройки"
-                tone="light"
-                onPress={() => router.push("/settings")}
-              >
-                <Settings color={colors.primaryDark} size={20} />
-              </IconCircleButton>
-              {canCreate ? (
-                <IconCircleButton
-                  accessibilityLabel="Создать"
-                  onPress={() => setCreateVisible(true)}
-                >
-                  <Plus color={colors.textLight} size={22} />
-                </IconCircleButton>
-              ) : null}
-              <IconCircleButton
-                accessibilityLabel="Выйти"
-                tone="light"
-                onPress={() => void logout()}
-              >
-                <LogOut color={colors.primaryDark} size={20} />
-              </IconCircleButton>
-            </View>
-          </Card>
-          {roomsQuery.isLoading ? (
-            <StateView title="Загрузка комнат" loading />
-          ) : roomsQuery.isError ? (
-            <StateView
-              title="Не удалось загрузить комнаты"
-              text="Проверьте подключение и попробуйте еще раз"
-              action={<AppButton title="Повторить" onPress={() => void roomsQuery.refetch()} />}
-            />
-          ) : (
-            <Card style={styles.roomsCard}>
-              <View style={styles.sectionHeader}>
-                <Text style={styles.sectionTitle}>Комнаты</Text>
-                <Text style={styles.sectionMeta}>{roomsQuery.data?.length ?? 0}</Text>
-              </View>
-              <RoomList
-                rooms={roomsQuery.data ?? []}
-                search={search}
-                onSearchChange={setSearch}
-                onDelete={setDeleteTarget}
-                refreshing={roomsQuery.isRefetching}
-                onRefresh={() => void roomsQuery.refetch()}
-              />
-            </Card>
-          )}
+          </ScrollView>
           <RoomFormModal
             visible={createVisible}
             title="Создать комнату"
@@ -200,29 +237,66 @@ export function LobbyScreen() {
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    gap: spacing.md,
-    padding: spacing.lg,
+    backgroundColor: colors.background,
   },
-  header: {
+  content: {
+    gap: spacing.xl,
+    padding: spacing.xl,
+    paddingBottom: spacing.xxxl,
+  },
+  hero: {
+    aspectRatio: 335 / 531,
+    justifyContent: "flex-end",
+    overflow: "hidden",
+    padding: spacing.md,
+    width: "100%",
+  },
+  heroImage: {
+    borderRadius: radius.lg,
+  },
+  heroShade: {
+    ...StyleSheet.absoluteFill,
+    backgroundColor: "rgba(0,0,0,0.18)",
+    borderRadius: radius.lg,
+  },
+  heroControls: {
+    alignItems: "center",
+    flexDirection: "row",
+    justifyContent: "space-between",
+    width: "100%",
+  },
+  callGroup: {
+    flexDirection: "row",
+    gap: spacing.md,
+  },
+  heroSettings: {
+    borderRadius: radius.md,
+  },
+  roomsPanel: {
+    backgroundColor: colors.surface,
+    borderRadius: radius.lg,
+    gap: spacing.lg,
+    overflow: "hidden",
+    padding: spacing.xl,
+  },
+  panelTop: {
     alignItems: "flex-start",
     flexDirection: "row",
-    gap: spacing.lg,
+    gap: spacing.md,
     justifyContent: "space-between",
   },
-  headerText: {
+  panelText: {
     flex: 1,
     minWidth: 0,
   },
-  headerActions: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: spacing.sm,
-    justifyContent: "flex-end",
-  },
-  eyebrow: {
+  sectionTitle: {
     ...typography.captionStrong,
-    color: colors.primary,
-    textTransform: "uppercase",
+    color: colors.textPrimary,
+  },
+  panelDescription: {
+    ...typography.caption,
+    color: colors.textSecondary,
+    marginTop: spacing.sm,
   },
   title: {
     ...typography.h1,
@@ -232,30 +306,6 @@ const styles = StyleSheet.create({
     ...typography.body,
     color: colors.textSecondary,
     marginTop: spacing.xs,
-  },
-  roomsCard: {
-    flex: 1,
-    gap: spacing.md,
-    minHeight: 0,
-    padding: spacing.md,
-  },
-  sectionHeader: {
-    alignItems: "center",
-    flexDirection: "row",
-    justifyContent: "space-between",
-  },
-  sectionTitle: {
-    ...typography.h3,
-    color: colors.textPrimary,
-  },
-  sectionMeta: {
-    ...typography.captionStrong,
-    backgroundColor: colors.backgroundSecondary,
-    borderRadius: 12,
-    color: colors.primaryDark,
-    overflow: "hidden",
-    paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.xs,
   },
   primaryButton: {
     alignSelf: "center",
@@ -283,5 +333,38 @@ const styles = StyleSheet.create({
   loginSettings: {
     alignItems: "center",
     marginTop: spacing.md,
+  },
+  footer: {
+    backgroundColor: colors.surface,
+    gap: spacing.md,
+    marginHorizontal: -spacing.xl,
+    marginBottom: -spacing.xxxl,
+    paddingHorizontal: spacing.xl,
+    paddingVertical: spacing.xxxl,
+  },
+  logoRow: {
+    alignItems: "center",
+    flexDirection: "row",
+    gap: spacing.sm,
+  },
+  logoMark: {
+    borderBottomColor: "transparent",
+    borderBottomWidth: 12,
+    borderLeftColor: colors.primary,
+    borderLeftWidth: 22,
+    borderTopColor: "transparent",
+    borderTopWidth: 12,
+    height: 0,
+    width: 0,
+  },
+  logoText: {
+    color: colors.textPrimary,
+    fontSize: 10,
+    fontWeight: "800",
+    lineHeight: 12,
+  },
+  footerText: {
+    ...typography.caption,
+    color: colors.textPrimary,
   },
 });

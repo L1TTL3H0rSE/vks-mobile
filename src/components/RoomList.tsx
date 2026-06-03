@@ -66,7 +66,6 @@ export function RoomList({
         renderItem={({ item }) => (
           <View style={styles.item}>
             <Pressable style={styles.itemMain} onPress={() => joinRoom(item)}>
-              <View style={styles.roomMark} />
               <Text numberOfLines={1} style={styles.itemTitle}>
                 {item.name}
               </Text>
@@ -124,14 +123,14 @@ export function RoomList({
 const styles = StyleSheet.create({
   wrapper: {
     flex: 1,
-    gap: spacing.md,
+    gap: spacing.lg,
     minHeight: 0,
   },
   searchBox: {
     alignItems: "center",
     backgroundColor: colors.surface,
     borderColor: colors.secondaryBorder,
-    borderRadius: radius.md,
+    borderRadius: radius.pill,
     borderWidth: 1,
     flexDirection: "row",
     gap: spacing.sm,
@@ -145,8 +144,7 @@ const styles = StyleSheet.create({
     paddingVertical: 0,
   },
   list: {
-    gap: spacing.md,
-    paddingBottom: spacing.xxl,
+    paddingBottom: spacing.xl,
   },
   emptyList: {
     flexGrow: 1,
@@ -155,22 +153,15 @@ const styles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: colors.surface,
     borderColor: colors.secondaryBorder,
-    borderRadius: radius.md,
-    borderWidth: 1,
+    borderBottomWidth: 1,
     flexDirection: "row",
     gap: spacing.md,
-    padding: spacing.md,
+    minHeight: 58,
+    paddingVertical: spacing.sm,
   },
   itemMain: {
     flex: 1,
     minWidth: 0,
-  },
-  roomMark: {
-    backgroundColor: colors.backgroundSecondary,
-    borderRadius: radius.pill,
-    height: 4,
-    marginBottom: spacing.sm,
-    width: 36,
   },
   itemTitle: {
     ...typography.bodyStrong,
@@ -184,6 +175,7 @@ const styles = StyleSheet.create({
   actions: {
     flexDirection: "row",
     gap: spacing.sm,
+    paddingRight: spacing.xs,
   },
   empty: {
     alignItems: "center",
