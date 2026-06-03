@@ -57,6 +57,7 @@ type LiveKitState = {
   getRoom: () => Room | null;
   connect: (url: string, token: string) => Promise<void>;
   disconnect: () => Promise<void>;
+  leaveRoom: () => Promise<void>;
   toggleCamera: () => Promise<void>;
   toggleMicrophone: () => Promise<void>;
   setPinnedIdentity: (identity: string | null) => void;
@@ -181,144 +182,174 @@ function wireRoomEvents(target: Room, set: SetLiveKitState) {
       } catch {}
     })
     .on(RoomEvent.Disconnected, () => {
+      if (room !== target) return;
+      room = null;
       set({
         connectionState: ConnectionState.Disconnected,
         isConnecting: false,
-        ...collectParticipants(room),
+        local: null,
+        participants: [],
+        pinnedIdentity: null,
       });
       void deactivateKeepAwake(KEEP_AWAKE_TAG);
     });
 }
 
 function encodeUtf8(value: string) {
-  return Uint8Array.from(unescape(encodeURIComponent(value)), (char) =>
-    char.charCodeAt(0),
-  );
+  if (typeof TextEncoder !== "undefined") {
+    return new TextEncoder().encode(value);
+  }
+
+  const encoded = encodeURIComponent(value);
+  const bytes: number[] = [];
+
+  for (let index = 0; index < encoded.length; index += 1) {
+    if (encoded[index] === "%") {
+      bytes.push(Number.parseInt(encoded.slice(index + 1, index + 3), 16));
+      index += 2;
+    } else {
+      bytes.push(encoded.charCodeAt(index));
+    }
+  }
+
+  return Uint8Array.from(bytes);
 }
 
 function decodeUtf8(value: Uint8Array) {
+  if (typeof TextDecoder !== "undefined") {
+    return new TextDecoder().decode(value);
+  }
+
   return decodeURIComponent(
-    escape(String.fromCharCode(...Array.from(value))),
+    Array.from(value)
+      .map((byte) => `%${byte.toString(16).padStart(2, "0")}`)
+      .join(""),
   );
 }
 
 export const useLiveKitStore = create<LiveKitState>()(
   persist(
     (set, get) => ({
-  connectionState: ConnectionState.Disconnected,
-  local: null,
-  participants: [],
-  messages: [],
-  isConnecting: false,
-  lastError: null,
-  cameraEnabled: false,
-  microphoneEnabled: false,
-  pinnedIdentity: null,
-
-  getRoom: () => room,
-
-  async connect(url: string, token: string) {
-    set({ isConnecting: true, lastError: null });
-
-    try {
-      if (room) {
-        await get().disconnect();
-      }
-
-      const nextRoom = new Room();
-      room = nextRoom;
-      wireRoomEvents(nextRoom, set);
-      await nextRoom.connect(url, token);
-      set({
-        connectionState: nextRoom.state,
-        isConnecting: false,
-        messages: [],
-        ...collectParticipants(nextRoom),
-      });
-      await nextRoom.localParticipant.setCameraEnabled(get().cameraEnabled);
-      await nextRoom.localParticipant.setMicrophoneEnabled(
-        get().microphoneEnabled,
-      );
-      refreshParticipants(set);
-      await activateKeepAwakeAsync(KEEP_AWAKE_TAG);
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      set({
-        connectionState: ConnectionState.Disconnected,
-        isConnecting: false,
-        lastError: message,
-      });
-      await get().disconnect();
-      throw error;
-    }
-  },
-
-  async disconnect() {
-    const currentRoom = room;
-    room = null;
-    if (currentRoom) {
-      currentRoom.removeAllListeners();
-      await currentRoom.disconnect();
-    }
-    await deactivateKeepAwake(KEEP_AWAKE_TAG);
-    set({
       connectionState: ConnectionState.Disconnected,
-      isConnecting: false,
       local: null,
       participants: [],
+      messages: [],
+      isConnecting: false,
+      lastError: null,
+      cameraEnabled: false,
+      microphoneEnabled: false,
       pinnedIdentity: null,
-    });
-  },
 
-  async toggleCamera() {
-    const enabled = !get().cameraEnabled;
-    set({ cameraEnabled: enabled });
-    const localParticipant: LocalParticipant | undefined = room?.localParticipant;
-    if (localParticipant) {
-      await localParticipant.setCameraEnabled(enabled);
-      refreshParticipants(set);
-    }
-  },
+      getRoom: () => room,
 
-  async toggleMicrophone() {
-    const enabled = !get().microphoneEnabled;
-    set({ microphoneEnabled: enabled });
-    const localParticipant: LocalParticipant | undefined = room?.localParticipant;
-    if (localParticipant) {
-      await localParticipant.setMicrophoneEnabled(enabled);
-      refreshParticipants(set);
-    }
-  },
+      async connect(url: string, token: string) {
+        set({ isConnecting: true, lastError: null });
 
-  setPinnedIdentity(identity: string | null) {
-    set({ pinnedIdentity: identity });
-  },
+        try {
+          if (room) {
+            await get().disconnect();
+          }
 
-  async sendMessage(text: string) {
-    const trimmed = text.trim();
-    if (!trimmed || !room) return;
+          const nextRoom = new Room();
+          room = nextRoom;
+          wireRoomEvents(nextRoom, set);
+          await nextRoom.connect(url, token);
+          set({
+            connectionState: nextRoom.state,
+            isConnecting: false,
+            messages: [],
+            ...collectParticipants(nextRoom),
+          });
+          await nextRoom.localParticipant.setCameraEnabled(get().cameraEnabled);
+          await nextRoom.localParticipant.setMicrophoneEnabled(
+            get().microphoneEnabled,
+          );
+          refreshParticipants(set);
+          await activateKeepAwakeAsync(KEEP_AWAKE_TAG);
+        } catch (error) {
+          const message = error instanceof Error ? error.message : String(error);
+          set({
+            connectionState: ConnectionState.Disconnected,
+            isConnecting: false,
+            lastError: message,
+          });
+          await get().disconnect();
+          throw error;
+        }
+      },
 
-    const payload = encodeUtf8(
-      JSON.stringify({ t: "chat", text: trimmed, ts: Date.now() }),
-    );
-    await room.localParticipant.publishData(payload, {
-      reliable: true,
-      topic: "chat",
-    });
-    set((current) => ({
-      messages: [
-        ...current.messages,
-        {
-          id: `${Date.now()}-${current.messages.length}`,
-          text: trimmed,
-          fromIdentity: room?.localParticipant.identity ?? "me",
-          fromSid: room?.localParticipant.sid ?? "me",
-          ts: Date.now(),
-        },
-      ],
-    }));
-  },
-}),
+      async disconnect() {
+        const currentRoom = room;
+        room = null;
+        if (currentRoom) {
+          currentRoom.removeAllListeners();
+          await currentRoom.disconnect();
+        }
+        await deactivateKeepAwake(KEEP_AWAKE_TAG);
+        set({
+          connectionState: ConnectionState.Disconnected,
+          isConnecting: false,
+          local: null,
+          participants: [],
+          pinnedIdentity: null,
+        });
+      },
+
+      async leaveRoom() {
+        await get().disconnect();
+      },
+
+      async toggleCamera() {
+        const enabled = !get().cameraEnabled;
+        set({ cameraEnabled: enabled });
+        const localParticipant: LocalParticipant | undefined =
+          room?.localParticipant;
+        if (localParticipant) {
+          await localParticipant.setCameraEnabled(enabled);
+          refreshParticipants(set);
+        }
+      },
+
+      async toggleMicrophone() {
+        const enabled = !get().microphoneEnabled;
+        set({ microphoneEnabled: enabled });
+        const localParticipant: LocalParticipant | undefined =
+          room?.localParticipant;
+        if (localParticipant) {
+          await localParticipant.setMicrophoneEnabled(enabled);
+          refreshParticipants(set);
+        }
+      },
+
+      setPinnedIdentity(identity: string | null) {
+        set({ pinnedIdentity: identity });
+      },
+
+      async sendMessage(text: string) {
+        const trimmed = text.trim();
+        if (!trimmed || !room) return;
+
+        const payload = encodeUtf8(
+          JSON.stringify({ t: "chat", text: trimmed, ts: Date.now() }),
+        );
+        await room.localParticipant.publishData(payload, {
+          reliable: true,
+          topic: "chat",
+        });
+        set((current) => ({
+          messages: [
+            ...current.messages,
+            {
+              id: `${Date.now()}-${current.messages.length}`,
+              text: trimmed,
+              fromIdentity: room?.localParticipant.identity ?? "me",
+              fromSid: room?.localParticipant.sid ?? "me",
+              ts: Date.now(),
+            },
+          ],
+        }));
+      },
+    }),
     {
       name: "vks.livekit.settings",
       storage: createJSONStorage(() => AsyncStorage),

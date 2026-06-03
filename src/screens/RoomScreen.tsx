@@ -35,7 +35,7 @@ export function RoomScreen({ roomId }: RoomScreenProps) {
   const toggleMicrophone = useLiveKitStore((state) => state.toggleMicrophone);
   const setPinnedIdentity = useLiveKitStore((state) => state.setPinnedIdentity);
   const sendMessage = useLiveKitStore((state) => state.sendMessage);
-  const disconnect = useLiveKitStore((state) => state.disconnect);
+  const leaveRoom = useLiveKitStore((state) => state.leaveRoom);
   const roomQuery = useQuery({
     queryKey: ["room", roomId],
     queryFn: async () => (await vksApi.getRoomById(roomId)).data,
@@ -122,7 +122,7 @@ export function RoomScreen({ roomId }: RoomScreenProps) {
           microphoneEnabled={microphoneEnabled}
           onCamera={() => void toggleCamera()}
           onMicrophone={() => void toggleMicrophone()}
-          onDisconnect={() => void disconnect()}
+          onDisconnect={() => void leaveRoom()}
           onParticipants={() => participantsSheetRef.current?.present()}
           onChat={() => chatSheetRef.current?.present()}
         />
