@@ -74,6 +74,22 @@ function isApiErrorResponse(value: unknown): value is ErrorResponse {
 }
 
 function toErrorResponse(body: unknown, status: number): ErrorResponse {
+  if (status === 401) {
+    return { error: true, message: "Вы не авторизованы" };
+  }
+
+  if (status === 403) {
+    return { error: true, message: "Недостаточно прав для действия" };
+  }
+
+  if (status === 404) {
+    return { error: true, message: "Запрошенный ресурс не найден" };
+  }
+
+  if (status >= 500) {
+    return { error: true, message: "Сервер временно недоступен" };
+  }
+
   if (isRecord(body) && typeof body.message === "string") {
     return {
       error: true,

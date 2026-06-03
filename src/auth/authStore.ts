@@ -90,6 +90,29 @@ async function clearSession() {
   await SecureStore.deleteItemAsync(SESSION_KEY);
 }
 
+function getAuthErrorMessage(error: unknown) {
+  const message = error instanceof Error ? error.message : String(error);
+  const normalized = message.toLowerCase();
+
+  if (
+    normalized.includes("cancel") ||
+    normalized.includes("dismiss") ||
+    normalized.includes("user cancelled")
+  ) {
+    return "Вход отменен";
+  }
+
+  if (normalized.includes("network")) {
+    return "Не удалось подключиться к серверу авторизации";
+  }
+
+  if (normalized.includes("token_refresh_failed")) {
+    return "Сессия истекла. Войдите снова";
+  }
+
+  return message || "Ошибка авторизации";
+}
+
 export const useAuthStore = create<AuthState>((set, get) => ({
   ...emptySession,
   status: "idle",
@@ -118,7 +141,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         ...emptySession,
         status: "anonymous",
         user: null,
-        error: error instanceof Error ? error.message : String(error),
+        error: getAuthErrorMessage(error),
       });
     }
   },
@@ -145,7 +168,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         ...emptySession,
         status: "anonymous",
         user: null,
-        error: error instanceof Error ? error.message : String(error),
+        error: getAuthErrorMessage(error),
       });
     }
   },
@@ -196,7 +219,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         ...emptySession,
         status: "anonymous",
         user: null,
-        error: error instanceof Error ? error.message : String(error),
+        error: "Сессия истекла. Войдите снова",
       });
       return null;
     }

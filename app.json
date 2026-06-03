@@ -3,7 +3,7 @@
     "name": "Kosygin VCS",
     "slug": "vcs-mobile",
     "version": "1.0.0",
-    "scheme": "vksapp",
+    "scheme": "vksmobile",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
