@@ -37,7 +37,7 @@ export function RoomFormModal({
             </Pressable>
           </View>
           <View style={styles.field}>
-            <Text style={styles.label}>Название дисциплины</Text>
+            <Text style={styles.label}>Название комнаты</Text>
             <TextInput
               autoFocus
               onChangeText={onNameChange}
@@ -48,7 +48,6 @@ export function RoomFormModal({
             />
           </View>
           <View style={styles.actions}>
-            <AppButton title="Отмена" variant="ghost" onPress={onClose} />
             <AppButton
               title="Создать"
               loading={loading}
@@ -65,7 +64,7 @@ export function RoomFormModal({
 const styles = StyleSheet.create({
   backdrop: {
     alignItems: "center",
-    backgroundColor: colors.darkOverlay,
+    backgroundColor: "rgba(0, 0, 0, 0.24)",
     flex: 1,
     justifyContent: "center",
     padding: spacing.xl,
@@ -74,8 +73,9 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
     borderRadius: radius.lg,
     gap: spacing.xxl,
-    maxWidth: 420,
-    padding: spacing.xxl,
+    maxWidth: 514,
+    paddingHorizontal: spacing.xxl,
+    paddingVertical: spacing.xxl,
     width: "100%",
   },
   header: {
@@ -89,7 +89,7 @@ const styles = StyleSheet.create({
   },
   closeButton: {
     alignItems: "center",
-    backgroundColor: colors.background,
+    backgroundColor: colors.primaryLight,
     borderRadius: 16,
     height: 32,
     justifyContent: "center",
@@ -103,7 +103,7 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
   },
   input: {
-    ...typography.caption,
+    ...typography.body,
     borderColor: colors.secondaryBorder,
     borderRadius: radius.sm,
     borderWidth: 1,
@@ -112,8 +112,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
   },
   actions: {
+    alignItems: "flex-end",
     flexDirection: "row",
-    gap: spacing.md,
     justifyContent: "flex-end",
+    marginTop: spacing.sm,
   },
 });
