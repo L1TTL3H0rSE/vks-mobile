@@ -77,12 +77,14 @@ Target project already has:
 
 Existing `src` folders are empty. Good starting point.
 
+Use Expo Router for file-based routes. This matches Nuxt mental model better than hand-written navigator setup and keeps route params/deep links close to screen files.
+
 ## 4. Missing Dependencies
 
 Install these for MVP:
 
 ```bash
-npm install @react-navigation/native @react-navigation/native-stack react-native-screens expo-clipboard react-native-svg lucide-react-native
+npm install expo-router react-native-screens expo-clipboard react-native-svg lucide-react-native
 ```
 
 Recommended:
@@ -118,10 +120,17 @@ Example `app.json` additions:
   "expo": {
     "scheme": "vksmobile",
     "ios": {
-      "bundleIdentifier": "ru.rguk.vks.mobile"
+      "bundleIdentifier": "ru.rguk.vks.mobile",
+      "infoPlist": {
+        "UIBackgroundModes": ["audio", "voip"]
+      }
     },
     "android": {
-      "package": "ru.rguk.vks.mobile"
+      "package": "ru.rguk.vks.mobile",
+      "permissions": [
+        "android.permission.FOREGROUND_SERVICE",
+        "android.permission.FOREGROUND_SERVICE_MICROPHONE"
+      ]
     }
   }
 }
@@ -132,6 +141,12 @@ Example `app.json` additions:
 Use this folder shape:
 
 ```text
+app/
+  _layout.tsx
+  index.tsx
+  settings.tsx
+  rooms/
+    [roomId].tsx
 src/
   api/
     apiClient.ts
@@ -145,9 +160,6 @@ src/
   livekit/
     livekitStore.ts
     participant.ts
-  navigation/
-    RootNavigator.tsx
-    linking.ts
   screens/
     LobbyScreen.tsx
     RoomLobbyScreen.tsx
@@ -305,21 +317,45 @@ Join flow:
 6. Enable camera/mic according to settings.
 7. Navigate/show `RoomScreen`.
 
-## 9. Navigation and Deep Links
+## 9. Expo Router and Deep Links
 
-Use React Navigation native stack.
+Use Expo Router.
 
 Routes:
 
-- `Lobby`: room list.
-- `RoomLobby`: `roomId`, pre-join preview.
-- `Room`: connected conference.
-- `Settings`: local media/settings.
+- `app/index.tsx`: lobby room list.
+- `app/rooms/[roomId].tsx`: room pre-join view when disconnected; connected conference view after LiveKit connect.
+- `app/settings.tsx`: local media/settings.
+
+Recommended route behavior:
+
+- Root layout restores auth from SecureStore before showing protected content.
+- If no auth session, show login screen/modal from `app/index.tsx` or redirect to an auth gate route.
+- `rooms/[roomId].tsx` reads `roomId` with `useLocalSearchParams`.
+- Query `?join=true` triggers auto-join only after auth and room metadata load.
+- On disconnect, keep user on same room route and show pre-join lobby.
 
 Deep links:
 
 - `vksmobile://rooms/:roomId`
 - `https://vcs.rguk.ru/rooms/:roomId` if universal/app links configured later.
+
+Expo config:
+
+```json
+{
+  "expo": {
+    "scheme": "vksmobile",
+    "plugins": ["expo-router"]
+  }
+}
+```
+
+Entry file:
+
+```ts
+import "expo-router/entry";
+```
 
 `getRoomLink(roomId)` should keep web link for sharing:
 
@@ -425,7 +461,7 @@ Later move to Expo config extra / EAS env:
 Phase 1: foundation
 
 - Add dependencies and app scheme/package IDs.
-- Add navigation.
+- Add Expo Router file routes.
 - Add auth store with AppAuth + SecureStore.
 - Add API client and VKS endpoints.
 - Add room types.
@@ -503,10 +539,10 @@ MVP accepted when:
 2. Add app scheme/package IDs.
 3. Create `src/auth/authStore.ts` with login/refresh/logout/getAccessToken.
 4. Create `src/api/apiClient.ts` and `src/api/vksApi.ts`.
-5. Create `src/navigation/RootNavigator.tsx`.
-6. Replace default `App.tsx` with providers and auth gate.
-7. Build `LobbyScreen` with room query and search.
-8. Build `RoomLobbyScreen` with join button.
-9. Build minimal `livekitStore`.
-10. Build `RoomScreen` with participant tiles and controls.
-
+5. Replace classic `App.tsx` entry with Expo Router entry.
+6. Create `app/_layout.tsx`, `app/index.tsx`, `app/rooms/[roomId].tsx`.
+7. Add providers/auth bootstrap in `app/_layout.tsx`.
+8. Build `LobbyScreen` with room query and search.
+9. Build `RoomLobbyScreen` with join button.
+10. Build minimal `livekitStore`.
+11. Build `RoomScreen` with participant tiles and controls.
