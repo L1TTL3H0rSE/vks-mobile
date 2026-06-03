@@ -34,20 +34,36 @@ export type ParticipantSnapshot = {
   audio?: TrackPublication;
 };
 
+export type ChatMessage = {
+  id: string;
+  text: string;
+  fromIdentity: string;
+  fromSid: string;
+  ts: number;
+};
+
 type LiveKitState = {
   connectionState: ConnectionState;
   local: ParticipantSnapshot | null;
   participants: ParticipantSnapshot[];
+  messages: ChatMessage[];
   isConnecting: boolean;
   lastError: string | null;
   cameraEnabled: boolean;
   microphoneEnabled: boolean;
+  pinnedIdentity: string | null;
   getRoom: () => Room | null;
   connect: (url: string, token: string) => Promise<void>;
   disconnect: () => Promise<void>;
   toggleCamera: () => Promise<void>;
   toggleMicrophone: () => Promise<void>;
+  setPinnedIdentity: (identity: string | null) => void;
+  sendMessage: (text: string) => Promise<void>;
 };
+
+type SetLiveKitState = (
+  state: Partial<LiveKitState> | ((state: LiveKitState) => Partial<LiveKitState>),
+) => void;
 
 function snapshotParticipant(participant: Participant): ParticipantSnapshot {
   const cam = participant.getTrackPublication(Track.Source.Camera);
@@ -97,11 +113,11 @@ function collectParticipants(target: Room | null) {
   };
 }
 
-function refreshParticipants(set: (state: Partial<LiveKitState>) => void) {
+function refreshParticipants(set: SetLiveKitState) {
   set(collectParticipants(room));
 }
 
-function wireRoomEvents(target: Room, set: (state: Partial<LiveKitState>) => void) {
+function wireRoomEvents(target: Room, set: SetLiveKitState) {
   target
     .on(RoomEvent.ConnectionStateChanged, (state) => {
       set({ connectionState: state });
@@ -139,6 +155,29 @@ function wireRoomEvents(target: Room, set: (state: Partial<LiveKitState>) => voi
     .on(RoomEvent.ParticipantPermissionsChanged, () => {
       refreshParticipants(set);
     })
+    .on(RoomEvent.DataReceived, (payload, participant) => {
+      try {
+        const parsed = JSON.parse(decodeUtf8(payload)) as {
+          t?: string;
+          text?: unknown;
+          ts?: unknown;
+        };
+        if (parsed.t !== "chat") return;
+
+        set((current) => ({
+          messages: [
+            ...current.messages,
+            {
+              id: `${Date.now()}-${current.messages.length}`,
+              text: String(parsed.text ?? ""),
+              fromIdentity: participant?.identity ?? "system",
+              fromSid: participant?.sid ?? "system",
+              ts: typeof parsed.ts === "number" ? parsed.ts : Date.now(),
+            },
+          ],
+        }));
+      } catch {}
+    })
     .on(RoomEvent.Disconnected, () => {
       set({
         connectionState: ConnectionState.Disconnected,
@@ -149,14 +188,28 @@ function wireRoomEvents(target: Room, set: (state: Partial<LiveKitState>) => voi
     });
 }
 
+function encodeUtf8(value: string) {
+  return Uint8Array.from(unescape(encodeURIComponent(value)), (char) =>
+    char.charCodeAt(0),
+  );
+}
+
+function decodeUtf8(value: Uint8Array) {
+  return decodeURIComponent(
+    escape(String.fromCharCode(...Array.from(value))),
+  );
+}
+
 export const useLiveKitStore = create<LiveKitState>((set, get) => ({
   connectionState: ConnectionState.Disconnected,
   local: null,
   participants: [],
+  messages: [],
   isConnecting: false,
   lastError: null,
   cameraEnabled: false,
   microphoneEnabled: false,
+  pinnedIdentity: null,
 
   getRoom: () => room,
 
@@ -175,6 +228,7 @@ export const useLiveKitStore = create<LiveKitState>((set, get) => ({
       set({
         connectionState: nextRoom.state,
         isConnecting: false,
+        messages: [],
         ...collectParticipants(nextRoom),
       });
       await nextRoom.localParticipant.setCameraEnabled(get().cameraEnabled);
@@ -208,6 +262,7 @@ export const useLiveKitStore = create<LiveKitState>((set, get) => ({
       isConnecting: false,
       local: null,
       participants: [],
+      pinnedIdentity: null,
     });
   },
 
@@ -229,5 +284,34 @@ export const useLiveKitStore = create<LiveKitState>((set, get) => ({
       await localParticipant.setMicrophoneEnabled(enabled);
       refreshParticipants(set);
     }
+  },
+
+  setPinnedIdentity(identity: string | null) {
+    set({ pinnedIdentity: identity });
+  },
+
+  async sendMessage(text: string) {
+    const trimmed = text.trim();
+    if (!trimmed || !room) return;
+
+    const payload = encodeUtf8(
+      JSON.stringify({ t: "chat", text: trimmed, ts: Date.now() }),
+    );
+    await room.localParticipant.publishData(payload, {
+      reliable: true,
+      topic: "chat",
+    });
+    set((current) => ({
+      messages: [
+        ...current.messages,
+        {
+          id: `${Date.now()}-${current.messages.length}`,
+          text: trimmed,
+          fromIdentity: room?.localParticipant.identity ?? "me",
+          fromSid: room?.localParticipant.sid ?? "me",
+          ts: Date.now(),
+        },
+      ],
+    }));
   },
 }));

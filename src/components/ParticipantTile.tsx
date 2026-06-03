@@ -1,17 +1,22 @@
 import { VideoView } from "@livekit/react-native";
 import { Mic, MicOff, Video, VideoOff } from "lucide-react-native";
-import { StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 import type { ParticipantSnapshot } from "@/livekit/livekitStore";
 
 type ParticipantTileProps = {
   participant: ParticipantSnapshot;
+  pinned?: boolean;
+  onPress?: () => void;
 };
 
-export function ParticipantTile({ participant }: ParticipantTileProps) {
+export function ParticipantTile({ participant, pinned, onPress }: ParticipantTileProps) {
   const videoTrack = participant.cam?.videoTrack ?? participant.screen?.videoTrack;
 
   return (
-    <View style={styles.tile}>
+    <Pressable
+      style={[styles.tile, pinned ? styles.pinned : null]}
+      onPress={onPress}
+    >
       {videoTrack ? (
         <VideoView objectFit="cover" style={styles.video} videoTrack={videoTrack} />
       ) : (
@@ -26,6 +31,7 @@ export function ParticipantTile({ participant }: ParticipantTileProps) {
           {participant.name || participant.identity}
           {participant.isLocal ? " (вы)" : ""}
         </Text>
+        {pinned ? <Text style={styles.pin}>Закреплен</Text> : null}
         <View style={styles.icons}>
           {participant.micEnabled ? (
             <Mic color="#fff" size={15} />
@@ -39,7 +45,7 @@ export function ParticipantTile({ participant }: ParticipantTileProps) {
           )}
         </View>
       </View>
-    </View>
+    </Pressable>
   );
 }
 
@@ -51,6 +57,10 @@ const styles = StyleSheet.create({
     overflow: "hidden",
     position: "relative",
     width: "100%",
+  },
+  pinned: {
+    borderColor: "#2563eb",
+    borderWidth: 2,
   },
   video: {
     height: "100%",
@@ -82,6 +92,11 @@ const styles = StyleSheet.create({
     color: "#fff",
     flex: 1,
     fontSize: 13,
+    fontWeight: "700",
+  },
+  pin: {
+    color: "#bfdbfe",
+    fontSize: 11,
     fontWeight: "700",
   },
   icons: {

@@ -1,4 +1,4 @@
-import { LogOut, Mic, MicOff, Video, VideoOff } from "lucide-react-native";
+import { LogOut, MessageCircle, Mic, MicOff, Users, Video, VideoOff } from "lucide-react-native";
 import { Pressable, StyleSheet, View } from "react-native";
 
 type RoomControlsProps = {
@@ -7,6 +7,8 @@ type RoomControlsProps = {
   onCamera: () => void;
   onMicrophone: () => void;
   onDisconnect: () => void;
+  onParticipants: () => void;
+  onChat: () => void;
 };
 
 export function RoomControls({
@@ -15,6 +17,8 @@ export function RoomControls({
   onCamera,
   onMicrophone,
   onDisconnect,
+  onParticipants,
+  onChat,
 }: RoomControlsProps) {
   return (
     <View style={styles.wrapper}>
@@ -31,6 +35,20 @@ export function RoomControls({
         onPress={onCamera}
       >
         {cameraEnabled ? <Video color="#fff" size={22} /> : <VideoOff color="#fff" size={22} />}
+      </Pressable>
+      <Pressable
+        accessibilityLabel="Участники"
+        style={[styles.button, styles.secondary]}
+        onPress={onParticipants}
+      >
+        <Users color="#fff" size={22} />
+      </Pressable>
+      <Pressable
+        accessibilityLabel="Чат"
+        style={[styles.button, styles.secondary]}
+        onPress={onChat}
+      >
+        <MessageCircle color="#fff" size={22} />
       </Pressable>
       <Pressable
         accessibilityLabel="Выйти"
@@ -66,6 +84,9 @@ const styles = StyleSheet.create({
   },
   inactive: {
     backgroundColor: "#6b7280",
+  },
+  secondary: {
+    backgroundColor: "#374151",
   },
   leave: {
     backgroundColor: "#dc2626",
