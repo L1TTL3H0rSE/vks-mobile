@@ -1,5 +1,5 @@
 import { BottomSheetFlatList, BottomSheetModal, BottomSheetView } from "@gorhom/bottom-sheet";
-import { CameraOff, MicOff, MonitorX, PhoneOff } from "lucide-react-native";
+import { CameraOff, Mic, MicOff, MonitorX, PhoneOff } from "lucide-react-native";
 import { forwardRef, useMemo } from "react";
 import { Image, Pressable, StyleSheet, Text, View } from "react-native";
 import type { Profile } from "@/api/types";
@@ -13,6 +13,8 @@ type ParticipantsSheetProps = {
   canManageRoom?: boolean;
   onPin: (identity: string | null) => void;
   onKick: (identity: string) => void;
+  onMute: (identity: string) => void;
+  onUnmute: (identity: string) => void;
   onSoftMicrophoneDisable: (identity: string) => void;
   onSoftCameraDisable: (identity: string) => void;
   onSoftScreenDisable: (identity: string) => void;
@@ -27,6 +29,8 @@ export const ParticipantsSheet = forwardRef<BottomSheetModal, ParticipantsSheetP
       canManageRoom,
       onPin,
       onKick,
+      onMute,
+      onUnmute,
       onSoftMicrophoneDisable,
       onSoftCameraDisable,
       onSoftScreenDisable,
@@ -76,6 +80,17 @@ export const ParticipantsSheet = forwardRef<BottomSheetModal, ParticipantsSheetP
                 </View>
                 {canManageRoom && !item.isLocal ? (
                   <View style={styles.actions}>
+                    <Pressable
+                      onPress={() =>
+                        item.micEnabled ? onMute(item.identity) : onUnmute(item.identity)
+                      }
+                    >
+                      {item.micEnabled ? (
+                        <MicOff color="#4b5563" size={19} />
+                      ) : (
+                        <Mic color="#4b5563" size={19} />
+                      )}
+                    </Pressable>
                     <Pressable onPress={() => onSoftMicrophoneDisable(item.identity)}>
                       <MicOff color="#4b5563" size={19} />
                     </Pressable>

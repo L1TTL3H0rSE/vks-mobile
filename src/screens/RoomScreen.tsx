@@ -7,6 +7,7 @@ import Toast from "react-native-toast-message";
 import { vksApi } from "@/api/vksApi";
 import { idApi } from "@/api/idApi";
 import { ChatSheet } from "@/components/ChatSheet";
+import { AppButton } from "@/components/AppButton";
 import { ParticipantTile } from "@/components/ParticipantTile";
 import { ParticipantsSheet } from "@/components/ParticipantsSheet";
 import { RoomControls } from "@/components/RoomControls";
@@ -30,6 +31,7 @@ export function RoomScreen({ roomId }: RoomScreenProps) {
   const local = useLiveKitStore((state) => state.local);
   const cameraEnabled = useLiveKitStore((state) => state.cameraEnabled);
   const microphoneEnabled = useLiveKitStore((state) => state.microphoneEnabled);
+  const connectionState = useLiveKitStore((state) => state.connectionState);
   const pinnedIdentity = useLiveKitStore((state) => state.pinnedIdentity);
   const toggleCamera = useLiveKitStore((state) => state.toggleCamera);
   const toggleMicrophone = useLiveKitStore((state) => state.toggleMicrophone);
@@ -40,6 +42,7 @@ export function RoomScreen({ roomId }: RoomScreenProps) {
     queryKey: ["room", roomId],
     queryFn: async () => (await vksApi.getRoomById(roomId)).data,
   });
+  const room = roomQuery.data;
   const profileIds = useMemo(
     () => Array.from(new Set(participants.map((item) => item.identity))).sort(),
     [participants],
@@ -66,12 +69,16 @@ export function RoomScreen({ roomId }: RoomScreenProps) {
       action,
       identity,
     }: {
-      action: "kick" | "mic" | "cam" | "screen";
+      action: "kick" | "mute" | "unmute" | "mic" | "cam" | "screen";
       identity: string;
     }) => {
       switch (action) {
         case "kick":
           return vksApi.kickUser(roomId, identity);
+        case "mute":
+          return vksApi.muteUser(roomId, identity);
+        case "unmute":
+          return vksApi.unmuteUser(roomId, identity);
         case "mic":
           return vksApi.softMicrophoneDisable(roomId, identity);
         case "cam":
@@ -91,30 +98,75 @@ export function RoomScreen({ roomId }: RoomScreenProps) {
       });
     },
   });
+  const closeRoom = useMutation({
+    mutationFn: async () => vksApi.closeRoom(roomId),
+    onSuccess: async () => {
+      Toast.show({ type: "success", text1: "Встреча завершена" });
+      await leaveRoom();
+    },
+    onError: (err) => {
+      Toast.show({
+        type: "error",
+        text1: "Не удалось завершить встречу",
+        text2: err instanceof Error ? err.message : String(err),
+      });
+    },
+  });
+  const columns = displayParticipants.length <= 1 ? 1 : 2;
 
   return (
     <View style={styles.screen}>
       <View style={styles.header}>
         <Text numberOfLines={1} style={styles.title}>
-          Комната {roomId}
+          {room?.name ?? `Комната ${roomId}`}
         </Text>
-        <Text style={styles.text}>{participants.length} онлайн</Text>
+        <Text style={styles.text}>
+          {participants.length} онлайн · {connectionState}
+        </Text>
+        {room?.can_manage ? (
+          <View style={styles.headerAction}>
+            <AppButton
+              title="Завершить встречу"
+              variant="danger"
+              loading={closeRoom.isPending}
+              onPress={() => closeRoom.mutate()}
+            />
+          </View>
+        ) : null}
       </View>
       <FlatList
+        key={columns}
+        numColumns={columns}
         contentContainerStyle={styles.grid}
+        columnWrapperStyle={columns > 1 ? styles.gridRow : undefined}
         data={displayParticipants}
         keyExtractor={(participant) => participant.sid || participant.identity}
         renderItem={({ item }) => (
-          <ParticipantTile
-            participant={item}
-            displayName={getProfileName(profiles.get(item.identity), item.name || item.identity)}
-            avatarUrl={getProfileAvatarUrl(profiles.get(item.identity))}
-            pinned={item.identity === pinnedIdentity}
-            onPress={() =>
-              setPinnedIdentity(item.identity === pinnedIdentity ? null : item.identity)
-            }
-          />
+          <View style={styles.tileWrapper}>
+            <ParticipantTile
+              participant={item}
+              displayName={getProfileName(
+                profiles.get(item.identity),
+                item.name || item.identity,
+              )}
+              avatarUrl={getProfileAvatarUrl(profiles.get(item.identity))}
+              pinned={item.identity === pinnedIdentity}
+              onPress={() =>
+                setPinnedIdentity(
+                  item.identity === pinnedIdentity ? null : item.identity,
+                )
+              }
+            />
+          </View>
         )}
+        ListEmptyComponent={
+          <View style={styles.empty}>
+            <Text style={styles.emptyTitle}>Подключение устанавливается</Text>
+            <Text style={styles.emptyText}>
+              Участники появятся после подключения к комнате.
+            </Text>
+          </View>
+        }
       />
       <View style={{ paddingBottom: insets.bottom }}>
         <RoomControls
@@ -132,9 +184,13 @@ export function RoomScreen({ roomId }: RoomScreenProps) {
         participants={participants}
         profiles={profiles}
         pinnedIdentity={pinnedIdentity}
-        canManageRoom={roomQuery.data?.can_manage}
+        canManageRoom={room?.can_manage}
         onPin={setPinnedIdentity}
         onKick={(identity) => moderatorAction.mutate({ action: "kick", identity })}
+        onMute={(identity) => moderatorAction.mutate({ action: "mute", identity })}
+        onUnmute={(identity) =>
+          moderatorAction.mutate({ action: "unmute", identity })
+        }
         onSoftMicrophoneDisable={(identity) =>
           moderatorAction.mutate({ action: "mic", identity })
         }
@@ -176,8 +232,37 @@ const styles = StyleSheet.create({
     fontSize: 14,
     marginTop: 8,
   },
+  headerAction: {
+    alignItems: "flex-start",
+    marginTop: 12,
+  },
   grid: {
     gap: 12,
     padding: 12,
+    flexGrow: 1,
+  },
+  gridRow: {
+    gap: 12,
+  },
+  tileWrapper: {
+    flex: 1,
+  },
+  empty: {
+    alignItems: "center",
+    flex: 1,
+    justifyContent: "center",
+    padding: 24,
+  },
+  emptyTitle: {
+    color: "#111827",
+    fontSize: 20,
+    fontWeight: "700",
+  },
+  emptyText: {
+    color: "#6b7280",
+    fontSize: 15,
+    lineHeight: 21,
+    marginTop: 8,
+    textAlign: "center",
   },
 });
