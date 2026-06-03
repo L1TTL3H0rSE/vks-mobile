@@ -63,7 +63,11 @@ Target project already has:
 - React Native `0.85.3`
 - React `19.2.3`
 - `@livekit/react-native`
+- `@livekit/react-native-expo-plugin`
+- `@livekit/react-native-webrtc`
+- `@config-plugins/react-native-webrtc`
 - `react-native-webrtc`
+- `livekit-client`
 - `expo-keep-awake`
 - `react-native-app-auth`
 - `expo-secure-store`
@@ -73,9 +77,13 @@ Target project already has:
 - `jwt-decode`
 - `zustand`
 - `@gorhom/bottom-sheet`
+- `@tanstack/react-query`
+- `expo-router`
+- `expo-clipboard`
+- `react-native-toast-message`
 - gesture/reanimated/safe-area dependencies
 
-Existing `src` folders are empty. Good starting point.
+Prepared scaffold now exists under `app/` and `src/`. Feature code still needs porting.
 
 Use Expo Router for file-based routes. This matches Nuxt mental model better than hand-written navigator setup and keeps route params/deep links close to screen files.
 
@@ -86,6 +94,14 @@ Install these for MVP:
 ```bash
 npm install expo-router react-native-screens expo-clipboard react-native-svg lucide-react-native
 ```
+
+LiveKit Expo packages required by official LiveKit Expo setup:
+
+```bash
+npm install @livekit/react-native-expo-plugin @livekit/react-native-webrtc @config-plugins/react-native-webrtc livekit-client
+```
+
+Current note: `@config-plugins/react-native-webrtc@14` declares Expo `^55` peer while this app uses Expo 56. It is installed with peer override and excluded from React Native Directory doctor metadata checks because it is required by LiveKit Expo setup.
 
 Recommended:
 

@@ -3,13 +3,16 @@
     "name": "Kosygin VCS",
     "slug": "vcs-mobile",
     "version": "1.0.0",
+    "scheme": "vksmobile",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "ios": {
+      "bundleIdentifier": "ru.rguk.vks.mobile",
       "supportsTablet": true
     },
     "android": {
+      "package": "ru.rguk.vks.mobile",
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/android-icon-foreground.png",
@@ -23,13 +26,25 @@
     },
     "plugins": [
       [
-        "@livekit/react-native",
+        "@livekit/react-native-expo-plugin",
+        {
+          "android": {
+            "audioType": "communication"
+          },
+          "ios": {
+            "enableMultitaskingCameraAccess": false
+          }
+        }
+      ],
+      [
+        "@config-plugins/react-native-webrtc",
         {
           "cameraPermission": "Приложению нужен доступ к камере для видеоконференций.",
           "microphonePermission": "Приложению нужен доступ к микрофону для аудиосвязи."
         }
       ],
-      "expo-secure-store"
+      "expo-secure-store",
+      "expo-router"
     ]
   }
 }
