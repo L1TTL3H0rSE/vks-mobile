@@ -162,12 +162,17 @@ export function RoomScreen({ roomId }: RoomScreenProps) {
               )}
               avatarUrl={getProfileAvatarUrl(profiles.get(featuredParticipant.identity))}
               pinned={featuredParticipant.identity === pinnedIdentity}
+              canManage={room?.can_manage}
               onPress={() =>
                 setPinnedIdentity(
                   featuredParticipant.identity === pinnedIdentity
                     ? null
                     : featuredParticipant.identity,
                 )
+              }
+              onMenuPress={() => participantsSheetRef.current?.present()}
+              onMutePress={() =>
+                moderatorAction.mutate({ action: "mute", identity: featuredParticipant.identity })
               }
             />
           </View>
@@ -194,12 +199,17 @@ export function RoomScreen({ roomId }: RoomScreenProps) {
                   )}
                   avatarUrl={getProfileAvatarUrl(profiles.get(participant.identity))}
                   pinned={participant.identity === pinnedIdentity}
+                  canManage={room?.can_manage}
                   onPress={() =>
                     setPinnedIdentity(
                       participant.identity === pinnedIdentity
                         ? null
                         : participant.identity,
-                    )
+                      )
+                  }
+                  onMenuPress={() => participantsSheetRef.current?.present()}
+                  onMutePress={() =>
+                    moderatorAction.mutate({ action: "mute", identity: participant.identity })
                   }
                 />
               </View>
