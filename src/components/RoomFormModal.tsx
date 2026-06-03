@@ -1,4 +1,5 @@
-import { Modal, StyleSheet, Text, TextInput, View } from "react-native";
+import { Modal, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { X } from "lucide-react-native";
 import { colors, radius, spacing, typography } from "@/theme/tokens";
 import { AppButton } from "./AppButton";
 
@@ -6,10 +7,8 @@ type RoomFormModalProps = {
   visible: boolean;
   title: string;
   name: string;
-  hidden: boolean;
   loading?: boolean;
   onNameChange: (value: string) => void;
-  onHiddenChange: (value: boolean) => void;
   onSubmit: () => void;
   onClose: () => void;
 };
@@ -18,10 +17,8 @@ export function RoomFormModal({
   visible,
   title,
   name,
-  hidden,
   loading,
   onNameChange,
-  onHiddenChange,
   onSubmit,
   onClose,
 }: RoomFormModalProps) {
@@ -29,20 +26,27 @@ export function RoomFormModal({
     <Modal animationType="fade" transparent visible={visible}>
       <View style={styles.backdrop}>
         <View style={styles.card}>
-          <Text style={styles.title}>{title}</Text>
-          <TextInput
-            autoFocus
-            onChangeText={onNameChange}
-            placeholder="Название комнаты"
-            placeholderTextColor={colors.textPlaceholder}
-            style={styles.input}
-            value={name}
-          />
-          <AppButton
-            title={hidden ? "Доступ по ссылке" : "Открытая комната"}
-            variant="secondary"
-            onPress={() => onHiddenChange(!hidden)}
-          />
+          <View style={styles.header}>
+            <Text style={styles.title}>{title}</Text>
+            <Pressable
+              accessibilityLabel="Закрыть"
+              style={styles.closeButton}
+              onPress={onClose}
+            >
+              <X color={colors.textSecondary} size={20} />
+            </Pressable>
+          </View>
+          <View style={styles.field}>
+            <Text style={styles.label}>Название дисциплины</Text>
+            <TextInput
+              autoFocus
+              onChangeText={onNameChange}
+              placeholder="Укажите название"
+              placeholderTextColor={colors.textPlaceholder}
+              style={styles.input}
+              value={name}
+            />
+          </View>
           <View style={styles.actions}>
             <AppButton title="Отмена" variant="ghost" onPress={onClose} />
             <AppButton
@@ -68,24 +72,44 @@ const styles = StyleSheet.create({
   },
   card: {
     backgroundColor: colors.surface,
-    borderRadius: radius.md,
-    gap: spacing.md,
+    borderRadius: radius.lg,
+    gap: spacing.xxl,
     maxWidth: 420,
-    padding: spacing.xl,
+    padding: spacing.xxl,
     width: "100%",
+  },
+  header: {
+    alignItems: "center",
+    flexDirection: "row",
+    justifyContent: "space-between",
   },
   title: {
     ...typography.h3,
     color: colors.textPrimary,
   },
+  closeButton: {
+    alignItems: "center",
+    backgroundColor: colors.background,
+    borderRadius: 16,
+    height: 32,
+    justifyContent: "center",
+    width: 32,
+  },
+  field: {
+    gap: spacing.sm,
+  },
+  label: {
+    ...typography.caption,
+    color: colors.textSecondary,
+  },
   input: {
-    ...typography.body,
+    ...typography.caption,
     borderColor: colors.secondaryBorder,
-    borderRadius: radius.md,
+    borderRadius: radius.sm,
     borderWidth: 1,
     color: colors.textPrimary,
     minHeight: 44,
-    paddingHorizontal: spacing.md,
+    paddingHorizontal: spacing.lg,
   },
   actions: {
     flexDirection: "row",

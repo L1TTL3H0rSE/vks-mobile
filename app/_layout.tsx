@@ -4,7 +4,7 @@ import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useState } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
-import { SafeAreaProvider } from "react-native-safe-area-context";
+import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import Toast from "react-native-toast-message";
 import { AuthGate } from "@/auth/AuthGate";
 
@@ -24,19 +24,21 @@ export default function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
-        <QueryClientProvider client={queryClient}>
-          <BottomSheetModalProvider>
-            <Stack
-              screenOptions={{
-                headerShown: false,
-                contentStyle: { backgroundColor: "#f8fafd" },
-              }}
-            />
-            <AuthGate />
-            <StatusBar style="dark" />
-            <Toast />
-          </BottomSheetModalProvider>
-        </QueryClientProvider>
+        <SafeAreaView style={{ flex: 1, backgroundColor: "#f8fafd" }}>
+          <QueryClientProvider client={queryClient}>
+            <BottomSheetModalProvider>
+              <Stack
+                screenOptions={{
+                  headerShown: false,
+                  contentStyle: { backgroundColor: "#f8fafd" },
+                }}
+              />
+              <AuthGate />
+              <StatusBar style="dark" />
+              <Toast />
+            </BottomSheetModalProvider>
+          </QueryClientProvider>
+        </SafeAreaView>
       </SafeAreaProvider>
     </GestureHandlerRootView>
   );

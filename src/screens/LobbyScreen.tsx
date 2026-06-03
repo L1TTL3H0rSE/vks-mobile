@@ -35,7 +35,6 @@ export function LobbyScreen() {
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [createVisible, setCreateVisible] = useState(false);
   const [roomName, setRoomName] = useState("");
-  const [roomHidden, setRoomHidden] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<Room | null>(null);
 
   useEffect(() => {
@@ -70,11 +69,10 @@ export function LobbyScreen() {
 
   const createRoom = useMutation({
     mutationFn: async () =>
-      vksApi.createRoom({ name: roomName.trim(), hidden: roomHidden }),
+      vksApi.createRoom({ name: roomName.trim(), hidden: true }),
     onSuccess: async () => {
       setCreateVisible(false);
       setRoomName("");
-      setRoomHidden(false);
       await queryClient.invalidateQueries({ queryKey: ["rooms"] });
       Toast.show({ type: "success", text1: "Комната создана" });
     },
@@ -122,10 +120,23 @@ export function LobbyScreen() {
             <View style={styles.roomsPanel}>
               <View style={styles.panelTop}>
                 <View style={styles.panelText}>
-                  <Text style={styles.sectionTitle}>Ваши комнаты</Text>
+                  <Text style={styles.sectionTitle}>
+                    {roomsQuery.data?.length
+                      ? canCreate
+                        ? "Ваши комнаты"
+                        : "Доступные комнаты"
+                      : canCreate
+                        ? "Создайте комнату для занятий"
+                        : "Доступные комнаты"}
+                  </Text>
                   <Text style={styles.panelDescription}>
-                    Комнаты, доступные для ваших студентов. Можно создать
-                    дополнительные
+                    {roomsQuery.data?.length
+                      ? canCreate
+                        ? "Комнаты, доступные для ваших студентов. Можно создать дополнительные"
+                        : "Комнаты, доступные для вас. Если нужной нет, присоединяйтесь по ссылке от преподавателя"
+                      : canCreate
+                        ? "У вас пока нет созданных комнат. Добавьте новую и отправьте ссылку студентам"
+                        : "У вас нет доступных комнат. Вы сможете присоединиться к конференции только по прямой ссылке"}
                   </Text>
                 </View>
                 <IconCircleButton
@@ -138,7 +149,11 @@ export function LobbyScreen() {
                 </IconCircleButton>
               </View>
               {canCreate ? (
-                <AppButton title="Создать" onPress={() => setCreateVisible(true)} />
+                <AppButton
+                  title="Создать"
+                  style={styles.createButton}
+                  onPress={() => setCreateVisible(true)}
+                />
               ) : null}
               {roomsQuery.isLoading ? (
                 <StateView title="Загрузка комнат" loading />
@@ -171,16 +186,32 @@ export function LobbyScreen() {
               <Text style={styles.footerText}>
                 © 2022-2024 ФГБОУ ВО РГУ им. А.Н. Косыгина
               </Text>
+              <FooterSection
+                title="Наши сервисы"
+                items={["Расписание", "Онлайн образование", "Рейтинг активности"]}
+              />
+              <FooterSection
+                title="О нас"
+                items={[
+                  "Документация университета",
+                  "Пользовательское соглашение",
+                  "Политика конфиденциальности",
+                ]}
+              />
+              <FooterSection title="Социальные сети" items={["VK", "Telegram", "Rutube"]} />
+              <View style={styles.footerSection}>
+                <Text style={styles.footerTitle}>Техподдержка</Text>
+                <Text style={styles.footerText}>Почта: cit@rguk.ru</Text>
+                <Text style={styles.footerText}>Телеграмм: @kosygineco</Text>
+              </View>
             </View>
           </ScrollView>
           <RoomFormModal
             visible={createVisible}
             title="Создать комнату"
             name={roomName}
-            hidden={roomHidden}
             loading={createRoom.isPending}
             onNameChange={setRoomName}
-            onHiddenChange={setRoomHidden}
             onClose={() => setCreateVisible(false)}
             onSubmit={() => createRoom.mutate()}
           />
@@ -217,6 +248,19 @@ export function LobbyScreen() {
   );
 }
 
+function FooterSection({ title, items }: { title: string; items: string[] }) {
+  return (
+    <View style={styles.footerSection}>
+      <Text style={styles.footerTitle}>{title}</Text>
+      {items.map((item) => (
+        <Text key={item} style={styles.footerText}>
+          {item}
+        </Text>
+      ))}
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
@@ -224,7 +268,8 @@ const styles = StyleSheet.create({
   },
   content: {
     gap: spacing.xl,
-    padding: spacing.xl,
+    paddingHorizontal: spacing.xl,
+    paddingTop: spacing.xxl,
     paddingBottom: spacing.xxxl,
   },
   roomsPanel: {
@@ -232,7 +277,8 @@ const styles = StyleSheet.create({
     borderRadius: radius.lg,
     gap: spacing.lg,
     overflow: "hidden",
-    padding: spacing.xl,
+    paddingHorizontal: spacing.xl,
+    paddingVertical: spacing.xxxl,
   },
   panelTop: {
     alignItems: "flex-start",
@@ -245,13 +291,16 @@ const styles = StyleSheet.create({
     minWidth: 0,
   },
   sectionTitle: {
-    ...typography.captionStrong,
+    ...typography.h3,
     color: colors.textPrimary,
   },
   panelDescription: {
     ...typography.caption,
     color: colors.textSecondary,
     marginTop: spacing.sm,
+  },
+  createButton: {
+    width: "100%",
   },
   title: {
     ...typography.h1,
@@ -291,7 +340,7 @@ const styles = StyleSheet.create({
   },
   footer: {
     backgroundColor: colors.surface,
-    gap: spacing.md,
+    gap: spacing.lg,
     marginHorizontal: -spacing.xl,
     marginBottom: -spacing.xxxl,
     paddingHorizontal: spacing.xl,
@@ -320,6 +369,14 @@ const styles = StyleSheet.create({
   },
   footerText: {
     ...typography.caption,
+    color: colors.textPrimary,
+  },
+  footerSection: {
+    gap: spacing.sm,
+    marginTop: spacing.md,
+  },
+  footerTitle: {
+    ...typography.bodyStrong,
     color: colors.textPrimary,
   },
 });

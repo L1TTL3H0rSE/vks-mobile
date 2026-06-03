@@ -61,8 +61,10 @@ export function RoomList({
         contentContainerStyle={rooms.length === 0 ? styles.emptyList : styles.list}
         data={rooms}
         keyExtractor={(room) => room.id}
+        nestedScrollEnabled
         onRefresh={onRefresh}
         refreshing={refreshing}
+        style={rooms.length > 5 ? styles.scroller : undefined}
         renderItem={({ item }) => (
           <View style={styles.item}>
             <Pressable style={styles.itemMain} onPress={() => joinRoom(item)}>
@@ -145,6 +147,9 @@ const styles = StyleSheet.create({
   },
   list: {
     paddingBottom: spacing.xl,
+  },
+  scroller: {
+    maxHeight: 290,
   },
   emptyList: {
     flexGrow: 1,

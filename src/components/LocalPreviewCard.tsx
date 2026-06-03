@@ -5,7 +5,7 @@ import {
 } from "@livekit/react-native-webrtc";
 import { Camera, CameraOff, Mic, MicOff, Settings } from "lucide-react-native";
 import { useEffect, useMemo, useState } from "react";
-import { Image, StyleSheet, Text, View } from "react-native";
+import { Image, StyleSheet, Text, View, useWindowDimensions } from "react-native";
 import Toast from "react-native-toast-message";
 import type { Profile } from "@/api/types";
 import type { AuthUser } from "@/auth/authStore";
@@ -32,6 +32,8 @@ export function LocalPreviewCard({
   const toggleCamera = useLiveKitStore((state) => state.toggleCamera);
   const toggleMicrophone = useLiveKitStore((state) => state.toggleMicrophone);
   const [stream, setStream] = useState<MediaStream | null>(null);
+  const { height, width } = useWindowDimensions();
+  const cardHeight = Math.max(360, Math.min(600, height - 310, width * 1.58));
   const displayName = getProfileName(
     profile,
     user?.name ?? user?.username ?? "Пользователь",
@@ -101,7 +103,7 @@ export function LocalPreviewCard({
   }
 
   return (
-    <View style={styles.card}>
+    <View style={[styles.card, { height: cardHeight }]}>
       {cameraEnabled && stream ? (
         <RTCView
           mirror
@@ -123,19 +125,19 @@ export function LocalPreviewCard({
         </View>
       )}
       <View style={styles.gradient} />
-      <View style={styles.lobbyText}>
-        <Text numberOfLines={1} style={styles.name}>
-          {displayName}
-        </Text>
-        <Text numberOfLines={1} style={styles.lobbyName}>
-          {lobbyName}
-        </Text>
-        {roomName ? (
+      {roomName ? (
+        <View style={styles.lobbyText}>
+          <Text numberOfLines={1} style={styles.name}>
+            {displayName}
+          </Text>
+          <Text numberOfLines={1} style={styles.lobbyName}>
+            {lobbyName}
+          </Text>
           <Text numberOfLines={1} style={styles.roomName}>
             {roomName}
           </Text>
-        ) : null}
-      </View>
+        </View>
+      ) : null}
       <View style={styles.controls}>
         <View style={styles.callGroup}>
           <IconCircleButton
@@ -183,7 +185,6 @@ function stopStream(stream: MediaStream) {
 
 const styles = StyleSheet.create({
   card: {
-    aspectRatio: 16 / 9,
     backgroundColor: colors.darkSurface,
     borderRadius: radius.lg,
     justifyContent: "flex-end",
