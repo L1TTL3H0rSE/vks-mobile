@@ -8,7 +8,6 @@ import {
   Text,
   View,
 } from "react-native";
-import { LogOut } from "lucide-react-native";
 import Toast from "react-native-toast-message";
 import { useAuthStore } from "@/auth/authStore";
 import { idApi } from "@/api/idApi";
@@ -16,6 +15,7 @@ import { vksApi } from "@/api/vksApi";
 import type { Room } from "@/api/types";
 import { AppButton } from "@/components/AppButton";
 import { ConfirmModal } from "@/components/ConfirmModal";
+import { IconLogout } from "@/components/icons";
 import { LocalPreviewCard } from "@/components/LocalPreviewCard";
 import { RoomFormModal } from "@/components/RoomFormModal";
 import { RoomList } from "@/components/RoomList";
@@ -145,7 +145,7 @@ export function LobbyScreen() {
                   size={34}
                   onPress={() => void logout()}
                 >
-                  <LogOut color={colors.primaryDark} size={17} />
+                  <IconLogout color={colors.primaryDark} size={17} />
                 </IconCircleButton>
               </View>
               {canCreate ? (

@@ -1,8 +1,8 @@
 import { BottomSheetFlatList, BottomSheetModal, BottomSheetTextInput, BottomSheetView } from "@gorhom/bottom-sheet";
-import { Send } from "lucide-react-native";
 import { forwardRef, useMemo, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import type { Profile } from "@/api/types";
+import { IconSend } from "@/components/icons";
 import type { ChatMessage } from "@/livekit/livekitStore";
 import { colors, radius, spacing, typography } from "@/theme/tokens";
 import { getProfileName } from "@/utils/profile";
@@ -64,7 +64,7 @@ export const ChatSheet = forwardRef<BottomSheetModal, ChatSheetProps>(
             value={text}
           />
           <Pressable style={styles.sendButton} onPress={submit}>
-            <Send color={colors.textLight} size={19} />
+            <IconSend color={colors.textLight} size={19} />
           </Pressable>
         </BottomSheetView>
       </BottomSheetModal>

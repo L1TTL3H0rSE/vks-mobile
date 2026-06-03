@@ -1,14 +1,14 @@
-import {
-  LogOut,
-  MessageCircle,
-  Mic,
-  MicOff,
-  Settings,
-  Users,
-  Video,
-  VideoOff,
-} from "lucide-react-native";
 import { StyleSheet, View } from "react-native";
+import {
+  IconCallRemove,
+  IconCamera,
+  IconCameraSlash,
+  IconMessage,
+  IconMicrophone,
+  IconMicrophoneSlash,
+  IconSetting,
+  IconUsers,
+} from "@/components/icons";
 import { colors, spacing } from "@/theme/tokens";
 import { IconCircleButton } from "@/components/ui";
 
@@ -41,7 +41,7 @@ export function RoomControls({
         size={44}
         onPress={onMicrophone}
       >
-        {microphoneEnabled ? <Mic color={colors.textLight} size={21} /> : <MicOff color={colors.textLight} size={21} />}
+        {microphoneEnabled ? <IconMicrophone color={colors.textLight} size={21} /> : <IconMicrophoneSlash color={colors.textLight} size={21} />}
       </IconCircleButton>
       <IconCircleButton
         accessibilityLabel="Камера"
@@ -49,7 +49,7 @@ export function RoomControls({
         size={44}
         onPress={onCamera}
       >
-        {cameraEnabled ? <Video color={colors.textLight} size={21} /> : <VideoOff color={colors.textLight} size={21} />}
+        {cameraEnabled ? <IconCamera color={colors.textLight} size={21} /> : <IconCameraSlash color={colors.textLight} size={21} />}
       </IconCircleButton>
       <IconCircleButton
         accessibilityLabel="Участники"
@@ -57,7 +57,7 @@ export function RoomControls({
         size={44}
         onPress={onParticipants}
       >
-        <Users color={colors.textLight} size={21} />
+        <IconUsers color={colors.textLight} size={21} />
       </IconCircleButton>
       <IconCircleButton
         accessibilityLabel="Чат"
@@ -65,7 +65,7 @@ export function RoomControls({
         size={44}
         onPress={onChat}
       >
-        <MessageCircle color={colors.textLight} size={21} />
+        <IconMessage color={colors.textLight} size={21} />
       </IconCircleButton>
       <IconCircleButton
         accessibilityLabel="Настройки"
@@ -73,7 +73,7 @@ export function RoomControls({
         size={44}
         onPress={onSettings}
       >
-        <Settings color={colors.textLight} size={21} />
+        <IconSetting color={colors.textLight} size={21} />
       </IconCircleButton>
       <IconCircleButton
         accessibilityLabel="Выйти"
@@ -81,7 +81,7 @@ export function RoomControls({
         size={44}
         onPress={onDisconnect}
       >
-        <LogOut color={colors.textLight} size={21} />
+        <IconCallRemove color={colors.textLight} size={21} />
       </IconCircleButton>
     </View>
   );

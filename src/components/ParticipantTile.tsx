@@ -1,6 +1,11 @@
 import { VideoView } from "@livekit/react-native";
-import { Mic, MicOff, Video, VideoOff } from "lucide-react-native";
 import { Image, Pressable, StyleSheet, Text, View } from "react-native";
+import {
+  IconCamera,
+  IconCameraSlash,
+  IconMicrophone,
+  IconMicrophoneSlash,
+} from "@/components/icons";
 import type { ParticipantSnapshot } from "@/livekit/livekitStore";
 import { colors, radius, spacing, typography } from "@/theme/tokens";
 
@@ -50,14 +55,14 @@ export function ParticipantTile({
         {pinned ? <Text style={styles.pin}>Закреплен</Text> : null}
         <View style={styles.icons}>
           {participant.micEnabled ? (
-            <Mic color="#fff" size={15} />
+            <IconMicrophone color={colors.textLight} size={15} />
           ) : (
-            <MicOff color="#fff" size={15} />
+            <IconMicrophoneSlash color={colors.textLight} size={15} />
           )}
           {participant.camEnabled ? (
-            <Video color="#fff" size={15} />
+            <IconCamera color={colors.textLight} size={15} />
           ) : (
-            <VideoOff color="#fff" size={15} />
+            <IconCameraSlash color={colors.textLight} size={15} />
           )}
         </View>
       </View>

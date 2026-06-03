@@ -1,8 +1,13 @@
 import { BottomSheetFlatList, BottomSheetModal, BottomSheetView } from "@gorhom/bottom-sheet";
-import { CameraOff, Mic, MicOff, MonitorX, PhoneOff } from "lucide-react-native";
 import { forwardRef, useMemo } from "react";
 import { Image, Pressable, StyleSheet, Text, View } from "react-native";
 import type { Profile } from "@/api/types";
+import {
+  IconCallRemove,
+  IconCameraSlash,
+  IconMicrophone,
+  IconMicrophoneSlash,
+} from "@/components/icons";
 import { IconCircleButton } from "@/components/ui";
 import type { ParticipantSnapshot } from "@/livekit/livekitStore";
 import { colors, radius, spacing, typography } from "@/theme/tokens";
@@ -90,9 +95,9 @@ export const ParticipantsSheet = forwardRef<BottomSheetModal, ParticipantsSheetP
                       }
                     >
                       {item.micEnabled ? (
-                        <MicOff color={colors.primaryDark} size={16} />
+                        <IconMicrophoneSlash color={colors.primaryDark} size={16} />
                       ) : (
-                        <Mic color={colors.primaryDark} size={16} />
+                        <IconMicrophone color={colors.primaryDark} size={16} />
                       )}
                     </IconCircleButton>
                     <IconCircleButton
@@ -100,28 +105,28 @@ export const ParticipantsSheet = forwardRef<BottomSheetModal, ParticipantsSheetP
                       size={32}
                       onPress={() => onSoftMicrophoneDisable(item.identity)}
                     >
-                      <MicOff color={colors.primaryDark} size={16} />
+                      <IconMicrophoneSlash color={colors.primaryDark} size={16} />
                     </IconCircleButton>
                     <IconCircleButton
                       tone="light"
                       size={32}
                       onPress={() => onSoftCameraDisable(item.identity)}
                     >
-                      <CameraOff color={colors.primaryDark} size={16} />
+                      <IconCameraSlash color={colors.primaryDark} size={16} />
                     </IconCircleButton>
                     <IconCircleButton
                       tone="light"
                       size={32}
                       onPress={() => onSoftScreenDisable(item.identity)}
                     >
-                      <MonitorX color={colors.primaryDark} size={16} />
+                      <IconCameraSlash color={colors.primaryDark} size={16} />
                     </IconCircleButton>
                     <IconCircleButton
                       tone="danger"
                       size={32}
                       onPress={() => onKick(item.identity)}
                     >
-                      <PhoneOff color={colors.textLight} size={16} />
+                      <IconCallRemove color={colors.textLight} size={16} />
                     </IconCircleButton>
                   </View>
                 ) : null}

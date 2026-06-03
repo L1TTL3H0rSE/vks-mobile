@@ -1,5 +1,5 @@
 import { Modal, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
-import { X } from "lucide-react-native";
+import { IconClose } from "@/components/icons";
 import { colors, radius, spacing, typography } from "@/theme/tokens";
 import { AppButton } from "./AppButton";
 
@@ -33,7 +33,7 @@ export function RoomFormModal({
               style={styles.closeButton}
               onPress={onClose}
             >
-              <X color={colors.textSecondary} size={20} />
+              <IconClose color={colors.textSecondary} size={20} />
             </Pressable>
           </View>
           <View style={styles.field}>

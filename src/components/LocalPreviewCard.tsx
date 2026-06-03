@@ -3,12 +3,18 @@ import {
   RTCView,
   type MediaStream,
 } from "@livekit/react-native-webrtc";
-import { Camera, CameraOff, Mic, MicOff, Settings } from "lucide-react-native";
 import { useEffect, useMemo, useState } from "react";
 import { Image, StyleSheet, Text, View, useWindowDimensions } from "react-native";
 import Toast from "react-native-toast-message";
 import type { Profile } from "@/api/types";
 import type { AuthUser } from "@/auth/authStore";
+import {
+  IconCamera,
+  IconCameraSlash,
+  IconMicrophone,
+  IconMicrophoneSlash,
+  IconSetting,
+} from "@/components/icons";
 import { IconCircleButton } from "@/components/ui";
 import { useLiveKitStore } from "@/livekit/livekitStore";
 import { colors, radius, spacing, typography } from "@/theme/tokens";
@@ -147,9 +153,9 @@ export function LocalPreviewCard({
             onPress={() => void onMicrophonePress()}
           >
             {microphoneEnabled ? (
-              <Mic color={colors.textLight} size={18} />
+              <IconMicrophone color={colors.textLight} size={18} />
             ) : (
-              <MicOff color={colors.textLight} size={18} />
+              <IconMicrophoneSlash color={colors.textLight} size={18} />
             )}
           </IconCircleButton>
           <IconCircleButton
@@ -159,9 +165,9 @@ export function LocalPreviewCard({
             onPress={() => void toggleCamera()}
           >
             {cameraEnabled ? (
-              <Camera color={colors.textLight} size={18} />
+              <IconCamera color={colors.textLight} size={18} />
             ) : (
-              <CameraOff color={colors.textLight} size={18} />
+              <IconCameraSlash color={colors.textLight} size={18} />
             )}
           </IconCircleButton>
         </View>
@@ -171,7 +177,7 @@ export function LocalPreviewCard({
           style={styles.settingsButton}
           onPress={onSettings}
         >
-          <Settings color={colors.textLight} size={18} />
+          <IconSetting color={colors.textLight} size={18} />
         </IconCircleButton>
       </View>
     </View>

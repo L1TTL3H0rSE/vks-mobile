@@ -1,9 +1,9 @@
 import * as Clipboard from "expo-clipboard";
 import { Link, router } from "expo-router";
-import { Copy, Play, Search, Trash2 } from "lucide-react-native";
 import { FlatList, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import Toast from "react-native-toast-message";
 import type { Room } from "@/api/types";
+import { IconLink, IconPlay, IconSearch, IconTrash } from "@/components/icons";
 import { IconCircleButton } from "@/components/ui";
 import { colors, radius, spacing, typography } from "@/theme/tokens";
 import { getRoomLink } from "@/utils/links";
@@ -46,7 +46,7 @@ export function RoomList({
   return (
     <View style={styles.wrapper}>
       <View style={styles.searchBox}>
-        <Search color={colors.textSecondary} size={19} />
+        <IconSearch color={colors.textSecondary} size={19} />
         <TextInput
           autoCapitalize="none"
           clearButtonMode="while-editing"
@@ -81,7 +81,7 @@ export function RoomList({
                 size={38}
                 onPress={() => joinRoom(item)}
               >
-                <Play color={colors.textLight} size={18} />
+                <IconPlay color={colors.textLight} size={18} />
               </IconCircleButton>
               <IconCircleButton
                 accessibilityLabel="Скопировать ссылку"
@@ -89,7 +89,7 @@ export function RoomList({
                 size={38}
                 onPress={() => void copyRoomLink(item)}
               >
-                <Copy color={colors.primaryDark} size={18} />
+                <IconLink color={colors.primaryDark} size={18} />
               </IconCircleButton>
               {item.can_manage ? (
                 <IconCircleButton
@@ -98,7 +98,7 @@ export function RoomList({
                   size={38}
                   onPress={() => onDelete(item)}
                 >
-                  <Trash2 color={colors.textLight} size={18} />
+                  <IconTrash color={colors.textLight} size={18} />
                 </IconCircleButton>
               ) : null}
             </View>
