@@ -20,5 +20,5 @@ export const env = envSchema.parse({
   keycloakRealm: process.env.EXPO_PUBLIC_KEYCLOAK_REALM ?? "master",
   keycloakClientId: process.env.EXPO_PUBLIC_KEYCLOAK_CLIENT_ID ?? "vks",
   keycloakRedirectUrl:
-    process.env.EXPO_PUBLIC_KEYCLOAK_REDIRECT_URL ?? "vksmobile:/oauthredirect",
+    process.env.EXPO_PUBLIC_KEYCLOAK_REDIRECT_URL ?? "vksmobile.auth:/oauthredirect",
 });

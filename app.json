@@ -29,10 +29,10 @@
         "react-native-app-auth",
         {
           "android": {
-            "appAuthRedirectScheme": "vksmobile"
+            "appAuthRedirectScheme": "vksmobile.auth"
           },
           "ios": {
-            "urlScheme": "vksmobile"
+            "urlScheme": "vksmobile.auth"
           }
         }
       ],

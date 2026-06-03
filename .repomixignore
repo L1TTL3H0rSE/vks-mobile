@@ -17,6 +17,7 @@ assets/*.jpeg
 assets/*.gif
 assets/*.webp
 assets/*.ico
+src/components/icons.tsx
 
 # Local secrets
 .env
