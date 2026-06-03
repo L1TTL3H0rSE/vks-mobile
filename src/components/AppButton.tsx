@@ -5,6 +5,7 @@ import {
   Text,
   type PressableProps,
 } from "react-native";
+import { colors, radius, spacing, typography } from "@/theme/tokens";
 
 type AppButtonProps = PressableProps & {
   title: string;
@@ -35,7 +36,9 @@ export function AppButton({
       ]}
     >
       {loading ? (
-        <ActivityIndicator color={variant === "primary" ? "#fff" : "#2563eb"} />
+        <ActivityIndicator
+          color={variant === "primary" || variant === "danger" ? colors.textLight : colors.primary}
+        />
       ) : (
         <Text style={[styles.text, styles[`${variant}Text`]]}>{title}</Text>
       )}
@@ -46,22 +49,22 @@ export function AppButton({
 const styles = StyleSheet.create({
   button: {
     alignItems: "center",
-    borderRadius: 8,
+    borderRadius: radius.md,
     justifyContent: "center",
     minHeight: 44,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
   },
   primary: {
-    backgroundColor: "#2563eb",
+    backgroundColor: colors.primary,
   },
   secondary: {
-    backgroundColor: "#eef2ff",
-    borderColor: "#bfdbfe",
+    backgroundColor: colors.backgroundSecondary,
+    borderColor: colors.primaryOutline,
     borderWidth: 1,
   },
   danger: {
-    backgroundColor: "#dc2626",
+    backgroundColor: colors.error,
   },
   ghost: {
     backgroundColor: "transparent",
@@ -73,19 +76,18 @@ const styles = StyleSheet.create({
     opacity: 0.8,
   },
   text: {
-    fontSize: 15,
-    fontWeight: "700",
+    ...typography.button,
   },
   primaryText: {
-    color: "#fff",
+    color: colors.textLight,
   },
   secondaryText: {
-    color: "#1d4ed8",
+    color: colors.primaryDark,
   },
   dangerText: {
-    color: "#fff",
+    color: colors.textLight,
   },
   ghostText: {
-    color: "#2563eb",
+    color: colors.primary,
   },
 });

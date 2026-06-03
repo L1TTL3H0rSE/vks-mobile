@@ -1,4 +1,5 @@
 import { Modal, StyleSheet, Text, TextInput, View } from "react-native";
+import { colors, radius, spacing, typography } from "@/theme/tokens";
 import { AppButton } from "./AppButton";
 
 type RoomFormModalProps = {
@@ -33,7 +34,7 @@ export function RoomFormModal({
             autoFocus
             onChangeText={onNameChange}
             placeholder="Название комнаты"
-            placeholderTextColor="#9ca3af"
+            placeholderTextColor={colors.textPlaceholder}
             style={styles.input}
             value={name}
           />
@@ -60,36 +61,35 @@ export function RoomFormModal({
 const styles = StyleSheet.create({
   backdrop: {
     alignItems: "center",
-    backgroundColor: "rgba(17, 24, 39, 0.45)",
+    backgroundColor: colors.darkOverlay,
     flex: 1,
     justifyContent: "center",
-    padding: 20,
+    padding: spacing.xl,
   },
   card: {
-    backgroundColor: "#fff",
-    borderRadius: 8,
-    gap: 14,
+    backgroundColor: colors.surface,
+    borderRadius: radius.md,
+    gap: spacing.md,
     maxWidth: 420,
-    padding: 18,
+    padding: spacing.xl,
     width: "100%",
   },
   title: {
-    color: "#111827",
-    fontSize: 20,
-    fontWeight: "700",
+    ...typography.h3,
+    color: colors.textPrimary,
   },
   input: {
-    borderColor: "#d1d5db",
-    borderRadius: 8,
+    ...typography.body,
+    borderColor: colors.secondaryBorder,
+    borderRadius: radius.md,
     borderWidth: 1,
-    color: "#111827",
-    fontSize: 16,
+    color: colors.textPrimary,
     minHeight: 44,
-    paddingHorizontal: 12,
+    paddingHorizontal: spacing.md,
   },
   actions: {
     flexDirection: "row",
-    gap: 10,
+    gap: spacing.md,
     justifyContent: "flex-end",
   },
 });

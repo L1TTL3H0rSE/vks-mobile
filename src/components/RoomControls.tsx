@@ -8,7 +8,9 @@ import {
   Video,
   VideoOff,
 } from "lucide-react-native";
-import { Pressable, StyleSheet, View } from "react-native";
+import { StyleSheet, View } from "react-native";
+import { colors, spacing } from "@/theme/tokens";
+import { IconCircleButton } from "@/components/ui";
 
 type RoomControlsProps = {
   cameraEnabled: boolean;
@@ -33,48 +35,54 @@ export function RoomControls({
 }: RoomControlsProps) {
   return (
     <View style={styles.wrapper}>
-      <Pressable
+      <IconCircleButton
         accessibilityLabel="Микрофон"
-        style={[styles.button, microphoneEnabled ? styles.active : styles.inactive]}
+        tone={microphoneEnabled ? "primary" : "muted"}
+        size={48}
         onPress={onMicrophone}
       >
-        {microphoneEnabled ? <Mic color="#fff" size={22} /> : <MicOff color="#fff" size={22} />}
-      </Pressable>
-      <Pressable
+        {microphoneEnabled ? <Mic color={colors.textLight} size={22} /> : <MicOff color={colors.textLight} size={22} />}
+      </IconCircleButton>
+      <IconCircleButton
         accessibilityLabel="Камера"
-        style={[styles.button, cameraEnabled ? styles.active : styles.inactive]}
+        tone={cameraEnabled ? "primary" : "muted"}
+        size={48}
         onPress={onCamera}
       >
-        {cameraEnabled ? <Video color="#fff" size={22} /> : <VideoOff color="#fff" size={22} />}
-      </Pressable>
-      <Pressable
+        {cameraEnabled ? <Video color={colors.textLight} size={22} /> : <VideoOff color={colors.textLight} size={22} />}
+      </IconCircleButton>
+      <IconCircleButton
         accessibilityLabel="Участники"
-        style={[styles.button, styles.secondary]}
+        tone="secondary"
+        size={48}
         onPress={onParticipants}
       >
-        <Users color="#fff" size={22} />
-      </Pressable>
-      <Pressable
+        <Users color={colors.textLight} size={22} />
+      </IconCircleButton>
+      <IconCircleButton
         accessibilityLabel="Чат"
-        style={[styles.button, styles.secondary]}
+        tone="secondary"
+        size={48}
         onPress={onChat}
       >
-        <MessageCircle color="#fff" size={22} />
-      </Pressable>
-      <Pressable
+        <MessageCircle color={colors.textLight} size={22} />
+      </IconCircleButton>
+      <IconCircleButton
         accessibilityLabel="Настройки"
-        style={[styles.button, styles.secondary]}
+        tone="secondary"
+        size={48}
         onPress={onSettings}
       >
-        <Settings color="#fff" size={22} />
-      </Pressable>
-      <Pressable
+        <Settings color={colors.textLight} size={22} />
+      </IconCircleButton>
+      <IconCircleButton
         accessibilityLabel="Выйти"
-        style={[styles.button, styles.leave]}
+        tone="danger"
+        size={48}
         onPress={onDisconnect}
       >
-        <LogOut color="#fff" size={22} />
-      </Pressable>
+        <LogOut color={colors.textLight} size={22} />
+      </IconCircleButton>
     </View>
   );
 }
@@ -82,31 +90,12 @@ export function RoomControls({
 const styles = StyleSheet.create({
   wrapper: {
     alignItems: "center",
-    backgroundColor: "#fff",
-    borderTopColor: "#e5e7eb",
+    backgroundColor: colors.surface,
+    borderTopColor: colors.secondaryBorder,
     borderTopWidth: 1,
     flexDirection: "row",
-    gap: 14,
-    justifyContent: "center",
-    padding: 16,
-  },
-  button: {
-    alignItems: "center",
-    borderRadius: 24,
-    height: 48,
-    justifyContent: "center",
-    width: 48,
-  },
-  active: {
-    backgroundColor: "#2563eb",
-  },
-  inactive: {
-    backgroundColor: "#6b7280",
-  },
-  secondary: {
-    backgroundColor: "#374151",
-  },
-  leave: {
-    backgroundColor: "#dc2626",
+    gap: spacing.md,
+    justifyContent: "space-around",
+    padding: spacing.lg,
   },
 });

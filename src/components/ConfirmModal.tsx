@@ -1,4 +1,5 @@
 import { Modal, StyleSheet, Text, View } from "react-native";
+import { colors, radius, spacing, typography } from "@/theme/tokens";
 import { AppButton } from "./AppButton";
 
 type ConfirmModalProps = {
@@ -44,32 +45,30 @@ export function ConfirmModal({
 const styles = StyleSheet.create({
   backdrop: {
     alignItems: "center",
-    backgroundColor: "rgba(17, 24, 39, 0.45)",
+    backgroundColor: colors.darkOverlay,
     flex: 1,
     justifyContent: "center",
-    padding: 20,
+    padding: spacing.xl,
   },
   card: {
-    backgroundColor: "#fff",
-    borderRadius: 8,
-    gap: 14,
+    backgroundColor: colors.surface,
+    borderRadius: radius.md,
+    gap: spacing.md,
     maxWidth: 420,
-    padding: 18,
+    padding: spacing.xl,
     width: "100%",
   },
   title: {
-    color: "#111827",
-    fontSize: 20,
-    fontWeight: "700",
+    ...typography.h3,
+    color: colors.textPrimary,
   },
   description: {
-    color: "#4b5563",
-    fontSize: 15,
-    lineHeight: 21,
+    ...typography.body,
+    color: colors.textSecondary,
   },
   actions: {
     flexDirection: "row",
-    gap: 10,
+    gap: spacing.md,
     justifyContent: "flex-end",
   },
 });
