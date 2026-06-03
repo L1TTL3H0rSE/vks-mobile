@@ -1,11 +1,14 @@
 import { BottomSheetFlatList, BottomSheetModal, BottomSheetView } from "@gorhom/bottom-sheet";
 import { CameraOff, MicOff, MonitorX, PhoneOff } from "lucide-react-native";
 import { forwardRef, useMemo } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Image, Pressable, StyleSheet, Text, View } from "react-native";
+import type { Profile } from "@/api/types";
 import type { ParticipantSnapshot } from "@/livekit/livekitStore";
+import { getProfileAvatarUrl, getProfileName } from "@/utils/profile";
 
 type ParticipantsSheetProps = {
   participants: ParticipantSnapshot[];
+  profiles: Map<string, Profile>;
   pinnedIdentity: string | null;
   canManageRoom?: boolean;
   onPin: (identity: string | null) => void;
@@ -19,6 +22,7 @@ export const ParticipantsSheet = forwardRef<BottomSheetModal, ParticipantsSheetP
   (
     {
       participants,
+      profiles,
       pinnedIdentity,
       canManageRoom,
       onPin,
@@ -43,6 +47,9 @@ export const ParticipantsSheet = forwardRef<BottomSheetModal, ParticipantsSheetP
           keyExtractor={(participant) => participant.sid || participant.identity}
           renderItem={({ item }) => {
             const pinned = item.identity === pinnedIdentity;
+            const profile = profiles.get(item.identity);
+            const displayName = getProfileName(profile, item.name || item.identity);
+            const avatarUrl = getProfileAvatarUrl(profile);
 
             return (
               <Pressable
@@ -50,13 +57,17 @@ export const ParticipantsSheet = forwardRef<BottomSheetModal, ParticipantsSheetP
                 onPress={() => onPin(pinned ? null : item.identity)}
               >
                 <View style={styles.avatar}>
-                  <Text style={styles.avatarText}>
-                    {(item.name || item.identity).slice(0, 1).toUpperCase()}
-                  </Text>
+                  {avatarUrl ? (
+                    <Image source={{ uri: avatarUrl }} style={styles.avatarImage} />
+                  ) : (
+                    <Text style={styles.avatarText}>
+                      {displayName.slice(0, 1).toUpperCase()}
+                    </Text>
+                  )}
                 </View>
                 <View style={styles.info}>
                   <Text numberOfLines={1} style={styles.name}>
-                    {item.name || item.identity}
+                    {displayName}
                     {item.isLocal ? " (вы)" : ""}
                   </Text>
                   <Text style={styles.meta}>
@@ -125,6 +136,11 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     height: 36,
     justifyContent: "center",
+    width: 36,
+  },
+  avatarImage: {
+    borderRadius: 18,
+    height: 36,
     width: 36,
   },
   avatarText: {

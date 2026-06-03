@@ -5,11 +5,13 @@ import { FlatList, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Toast from "react-native-toast-message";
 import { vksApi } from "@/api/vksApi";
+import { idApi } from "@/api/idApi";
 import { ChatSheet } from "@/components/ChatSheet";
 import { ParticipantTile } from "@/components/ParticipantTile";
 import { ParticipantsSheet } from "@/components/ParticipantsSheet";
 import { RoomControls } from "@/components/RoomControls";
 import { useLiveKitStore } from "@/livekit/livekitStore";
+import { getProfileAvatarUrl, getProfileName } from "@/utils/profile";
 
 type RoomScreenProps = {
   roomId: string;
@@ -34,6 +36,19 @@ export function RoomScreen({ roomId }: RoomScreenProps) {
     queryKey: ["room", roomId],
     queryFn: async () => (await vksApi.getRoomById(roomId)).data,
   });
+  const profileIds = useMemo(
+    () => Array.from(new Set(participants.map((item) => item.identity))).sort(),
+    [participants],
+  );
+  const profilesQuery = useQuery({
+    queryKey: ["profiles", profileIds],
+    queryFn: () => idApi.readPublicProfiles(profileIds),
+    enabled: profileIds.length > 0,
+  });
+  const profiles = useMemo(() => {
+    const items = profilesQuery.data ?? [];
+    return new Map(items.map((profile) => [profile.user_id, profile]));
+  }, [profilesQuery.data]);
 
   const displayParticipants = useMemo(() => {
     if (!pinnedIdentity) return participants;
@@ -88,6 +103,8 @@ export function RoomScreen({ roomId }: RoomScreenProps) {
         renderItem={({ item }) => (
           <ParticipantTile
             participant={item}
+            displayName={getProfileName(profiles.get(item.identity), item.name || item.identity)}
+            avatarUrl={getProfileAvatarUrl(profiles.get(item.identity))}
             pinned={item.identity === pinnedIdentity}
             onPress={() =>
               setPinnedIdentity(item.identity === pinnedIdentity ? null : item.identity)
@@ -109,6 +126,7 @@ export function RoomScreen({ roomId }: RoomScreenProps) {
       <ParticipantsSheet
         ref={participantsSheetRef}
         participants={participants}
+        profiles={profiles}
         pinnedIdentity={pinnedIdentity}
         canManageRoom={roomQuery.data?.can_manage}
         onPin={setPinnedIdentity}
@@ -127,6 +145,7 @@ export function RoomScreen({ roomId }: RoomScreenProps) {
         ref={chatSheetRef}
         messages={messages}
         localIdentity={local?.identity}
+        profiles={profiles}
         onSend={(text) => void sendMessage(text)}
       />
     </View>

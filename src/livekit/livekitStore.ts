@@ -2,6 +2,7 @@ import {
   activateKeepAwakeAsync,
   deactivateKeepAwake,
 } from "expo-keep-awake";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
   ConnectionState,
   LocalParticipant,
@@ -13,6 +14,7 @@ import {
   type TrackPublication,
 } from "livekit-client";
 import { create } from "zustand";
+import { createJSONStorage, persist } from "zustand/middleware";
 
 const KEEP_AWAKE_TAG = "vks-livekit";
 let room: Room | null = null;
@@ -200,7 +202,9 @@ function decodeUtf8(value: Uint8Array) {
   );
 }
 
-export const useLiveKitStore = create<LiveKitState>((set, get) => ({
+export const useLiveKitStore = create<LiveKitState>()(
+  persist(
+    (set, get) => ({
   connectionState: ConnectionState.Disconnected,
   local: null,
   participants: [],
@@ -314,4 +318,14 @@ export const useLiveKitStore = create<LiveKitState>((set, get) => ({
       ],
     }));
   },
-}));
+}),
+    {
+      name: "vks.livekit.settings",
+      storage: createJSONStorage(() => AsyncStorage),
+      partialize: (state) => ({
+        cameraEnabled: state.cameraEnabled,
+        microphoneEnabled: state.microphoneEnabled,
+      }),
+    },
+  ),
+);

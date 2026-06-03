@@ -2,16 +2,19 @@ import { BottomSheetFlatList, BottomSheetModal, BottomSheetTextInput, BottomShee
 import { Send } from "lucide-react-native";
 import { forwardRef, useMemo, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
+import type { Profile } from "@/api/types";
 import type { ChatMessage } from "@/livekit/livekitStore";
+import { getProfileName } from "@/utils/profile";
 
 type ChatSheetProps = {
   messages: ChatMessage[];
   localIdentity?: string;
+  profiles: Map<string, Profile>;
   onSend: (text: string) => void;
 };
 
 export const ChatSheet = forwardRef<BottomSheetModal, ChatSheetProps>(
-  ({ messages, localIdentity, onSend }, ref) => {
+  ({ messages, localIdentity, profiles, onSend }, ref) => {
     const [text, setText] = useState("");
     const snapPoints = useMemo(() => ["45%", "80%"], []);
 
@@ -33,9 +36,13 @@ export const ChatSheet = forwardRef<BottomSheetModal, ChatSheetProps>(
           keyExtractor={(message) => message.id}
           renderItem={({ item }) => {
             const mine = item.fromIdentity === localIdentity;
+            const profileName = getProfileName(
+              profiles.get(item.fromIdentity),
+              item.fromIdentity,
+            );
             return (
               <View style={[styles.message, mine ? styles.mine : styles.other]}>
-                <Text style={styles.author}>{mine ? "Вы" : item.fromIdentity}</Text>
+                <Text style={styles.author}>{mine ? "Вы" : profileName}</Text>
                 <Text style={styles.messageText}>{item.text}</Text>
               </View>
             );

@@ -1,16 +1,25 @@
 import { VideoView } from "@livekit/react-native";
 import { Mic, MicOff, Video, VideoOff } from "lucide-react-native";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Image, Pressable, StyleSheet, Text, View } from "react-native";
 import type { ParticipantSnapshot } from "@/livekit/livekitStore";
 
 type ParticipantTileProps = {
   participant: ParticipantSnapshot;
+  displayName?: string;
+  avatarUrl?: string;
   pinned?: boolean;
   onPress?: () => void;
 };
 
-export function ParticipantTile({ participant, pinned, onPress }: ParticipantTileProps) {
+export function ParticipantTile({
+  participant,
+  displayName,
+  avatarUrl,
+  pinned,
+  onPress,
+}: ParticipantTileProps) {
   const videoTrack = participant.cam?.videoTrack ?? participant.screen?.videoTrack;
+  const name = displayName ?? participant.name ?? participant.identity;
 
   return (
     <Pressable
@@ -21,14 +30,16 @@ export function ParticipantTile({ participant, pinned, onPress }: ParticipantTil
         <VideoView objectFit="cover" style={styles.video} videoTrack={videoTrack} />
       ) : (
         <View style={styles.placeholder}>
-          <Text style={styles.initial}>
-            {(participant.name ?? participant.identity).slice(0, 1).toUpperCase()}
-          </Text>
+          {avatarUrl ? (
+            <Image source={{ uri: avatarUrl }} style={styles.avatar} />
+          ) : (
+            <Text style={styles.initial}>{name.slice(0, 1).toUpperCase()}</Text>
+          )}
         </View>
       )}
       <View style={styles.footer}>
         <Text numberOfLines={1} style={styles.name}>
-          {participant.name || participant.identity}
+          {name}
           {participant.isLocal ? " (вы)" : ""}
         </Text>
         {pinned ? <Text style={styles.pin}>Закреплен</Text> : null}
@@ -75,6 +86,11 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: 40,
     fontWeight: "800",
+  },
+  avatar: {
+    borderRadius: 44,
+    height: 88,
+    width: 88,
   },
   footer: {
     alignItems: "center",
