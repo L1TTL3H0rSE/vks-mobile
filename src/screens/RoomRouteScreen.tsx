@@ -1,5 +1,5 @@
 import { useLocalSearchParams } from "expo-router";
-import { StyleSheet, Text, View } from "react-native";
+import { RoomLobbyScreen } from "./RoomLobbyScreen";
 
 export function RoomRouteScreen() {
   const { roomId, join } = useLocalSearchParams<{
@@ -7,30 +7,5 @@ export function RoomRouteScreen() {
     join?: string;
   }>();
 
-  return (
-    <View style={styles.screen}>
-      <Text style={styles.title}>Room scaffold</Text>
-      <Text style={styles.text}>roomId: {roomId}</Text>
-      {join === "true" ? <Text style={styles.text}>auto join requested</Text> : null}
-    </View>
-  );
+  return <RoomLobbyScreen roomId={roomId} autoJoin={join === "true"} />;
 }
-
-const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    padding: 24,
-  },
-  title: {
-    color: "#111827",
-    fontSize: 24,
-    fontWeight: "700",
-  },
-  text: {
-    color: "#4b5563",
-    fontSize: 16,
-    marginTop: 8,
-  },
-});
