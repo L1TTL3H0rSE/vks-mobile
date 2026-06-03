@@ -1,13 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { router } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
-import {
-  ActivityIndicator,
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
-} from "react-native";
+import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Settings, LogOut, Plus } from "lucide-react-native";
 import Toast from "react-native-toast-message";
 import { useAuthStore } from "@/auth/authStore";
 import { vksApi } from "@/api/vksApi";
@@ -16,6 +11,8 @@ import { AppButton } from "@/components/AppButton";
 import { ConfirmModal } from "@/components/ConfirmModal";
 import { RoomFormModal } from "@/components/RoomFormModal";
 import { RoomList } from "@/components/RoomList";
+import { Card, IconCircleButton, Screen, StateView } from "@/components/ui";
+import { colors, spacing, typography } from "@/theme/tokens";
 
 export function LobbyScreen() {
   const status = useAuthStore((state) => state.status);
@@ -94,49 +91,67 @@ export function LobbyScreen() {
   });
 
   return (
-    <View style={styles.screen}>
+    <Screen style={styles.screen}>
       {isLoading ? (
-        <ActivityIndicator color="#2563eb" size="large" />
+        <StateView title="Загрузка" text="Проверяем сессию" loading />
       ) : isAuthenticated ? (
         <>
-          <View style={styles.header}>
+          <Card style={styles.header}>
             <View style={styles.headerText}>
+              <Text style={styles.eyebrow}>Мобильная ВКС</Text>
               <Text style={styles.title}>Kosygin VCS</Text>
               <Text style={styles.text}>
                 {user?.name ?? user?.username ?? "Вы авторизованы"}
               </Text>
             </View>
             <View style={styles.headerActions}>
-              <AppButton
-                title="Настройки"
-                variant="secondary"
+              <IconCircleButton
+                accessibilityLabel="Настройки"
+                tone="light"
                 onPress={() => router.push("/settings")}
-              />
+              >
+                <Settings color={colors.primaryDark} size={20} />
+              </IconCircleButton>
               {canCreate ? (
-                <AppButton title="Создать" onPress={() => setCreateVisible(true)} />
+                <IconCircleButton
+                  accessibilityLabel="Создать"
+                  onPress={() => setCreateVisible(true)}
+                >
+                  <Plus color={colors.textLight} size={22} />
+                </IconCircleButton>
               ) : null}
-              <AppButton title="Выйти" variant="secondary" onPress={() => void logout()} />
+              <IconCircleButton
+                accessibilityLabel="Выйти"
+                tone="light"
+                onPress={() => void logout()}
+              >
+                <LogOut color={colors.primaryDark} size={20} />
+              </IconCircleButton>
             </View>
-          </View>
+          </Card>
           {roomsQuery.isLoading ? (
-            <View style={styles.center}>
-              <ActivityIndicator color="#2563eb" size="large" />
-              <Text style={styles.text}>Загрузка комнат</Text>
-            </View>
+            <StateView title="Загрузка комнат" loading />
           ) : roomsQuery.isError ? (
-            <View style={styles.center}>
-              <Text style={styles.error}>Не удалось загрузить комнаты</Text>
-              <AppButton title="Повторить" onPress={() => void roomsQuery.refetch()} />
-            </View>
-          ) : (
-            <RoomList
-              rooms={roomsQuery.data ?? []}
-              search={search}
-              onSearchChange={setSearch}
-              onDelete={setDeleteTarget}
-              refreshing={roomsQuery.isRefetching}
-              onRefresh={() => void roomsQuery.refetch()}
+            <StateView
+              title="Не удалось загрузить комнаты"
+              text="Проверьте подключение и попробуйте еще раз"
+              action={<AppButton title="Повторить" onPress={() => void roomsQuery.refetch()} />}
             />
+          ) : (
+            <Card style={styles.roomsCard}>
+              <View style={styles.sectionHeader}>
+                <Text style={styles.sectionTitle}>Комнаты</Text>
+                <Text style={styles.sectionMeta}>{roomsQuery.data?.length ?? 0}</Text>
+              </View>
+              <RoomList
+                rooms={roomsQuery.data ?? []}
+                search={search}
+                onSearchChange={setSearch}
+                onDelete={setDeleteTarget}
+                refreshing={roomsQuery.isRefetching}
+                onRefresh={() => void roomsQuery.refetch()}
+              />
+            </Card>
           )}
           <RoomFormModal
             visible={createVisible}
@@ -162,7 +177,7 @@ export function LobbyScreen() {
           />
         </>
       ) : (
-        <>
+        <ScrollView contentContainerStyle={styles.loginContent}>
           <Text style={styles.title}>Kosygin VCS</Text>
           <Text style={styles.text}>Войдите, чтобы увидеть доступные комнаты</Text>
           {error ? <Text style={styles.error}>{error}</Text> : null}
@@ -176,29 +191,23 @@ export function LobbyScreen() {
               onPress={() => router.push("/settings")}
             />
           </View>
-        </>
+        </ScrollView>
       )}
-    </View>
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    padding: 24,
-  },
-  center: {
-    alignItems: "center",
-    flex: 1,
-    gap: 12,
-    justifyContent: "center",
+    gap: spacing.md,
+    padding: spacing.lg,
   },
   header: {
     alignItems: "flex-start",
     flexDirection: "row",
-    gap: 16,
+    gap: spacing.lg,
     justifyContent: "space-between",
-    marginBottom: 20,
   },
   headerText: {
     flex: 1,
@@ -207,53 +216,72 @@ const styles = StyleSheet.create({
   headerActions: {
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: 10,
+    gap: spacing.sm,
     justifyContent: "flex-end",
   },
+  eyebrow: {
+    ...typography.captionStrong,
+    color: colors.primary,
+    textTransform: "uppercase",
+  },
   title: {
-    color: "#111827",
-    fontSize: 28,
-    fontWeight: "700",
+    ...typography.h1,
+    color: colors.textPrimary,
   },
   text: {
-    color: "#4b5563",
-    fontSize: 16,
-    marginTop: 8,
+    ...typography.body,
+    color: colors.textSecondary,
+    marginTop: spacing.xs,
+  },
+  roomsCard: {
+    flex: 1,
+    gap: spacing.md,
+    minHeight: 0,
+    padding: spacing.md,
+  },
+  sectionHeader: {
+    alignItems: "center",
+    flexDirection: "row",
+    justifyContent: "space-between",
+  },
+  sectionTitle: {
+    ...typography.h3,
+    color: colors.textPrimary,
+  },
+  sectionMeta: {
+    ...typography.captionStrong,
+    backgroundColor: colors.backgroundSecondary,
+    borderRadius: 12,
+    color: colors.primaryDark,
+    overflow: "hidden",
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
   },
   primaryButton: {
     alignSelf: "center",
-    backgroundColor: "#2563eb",
+    backgroundColor: colors.primary,
     borderRadius: 8,
-    marginTop: 24,
-    paddingHorizontal: 18,
-    paddingVertical: 12,
+    marginTop: spacing.xxl,
+    paddingHorizontal: spacing.xl,
+    paddingVertical: spacing.md,
   },
   primaryButtonText: {
-    color: "#ffffff",
-    fontSize: 16,
-    fontWeight: "600",
-  },
-  secondaryButton: {
-    borderColor: "#d1d5db",
-    borderRadius: 8,
-    borderWidth: 1,
-    marginTop: 16,
-    paddingHorizontal: 18,
-    paddingVertical: 12,
-  },
-  secondaryButtonText: {
-    color: "#374151",
-    fontSize: 16,
-    fontWeight: "600",
+    ...typography.button,
+    color: colors.textLight,
   },
   error: {
-    color: "#dc2626",
-    fontSize: 14,
-    marginTop: 12,
+    ...typography.captionStrong,
+    color: colors.errorActive,
+    marginTop: spacing.md,
     textAlign: "center",
+  },
+  loginContent: {
+    flexGrow: 1,
+    justifyContent: "center",
+    padding: spacing.xxl,
   },
   loginSettings: {
     alignItems: "center",
-    marginTop: 12,
+    marginTop: spacing.md,
   },
 });

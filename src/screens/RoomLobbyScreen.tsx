@@ -1,10 +1,12 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useEffect, useRef } from "react";
-import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 import Toast from "react-native-toast-message";
 import { vksApi } from "@/api/vksApi";
 import { AppButton } from "@/components/AppButton";
+import { Card, Screen, StateView } from "@/components/ui";
 import { useLiveKitStore } from "@/livekit/livekitStore";
+import { colors, spacing, typography } from "@/theme/tokens";
 
 type RoomLobbyScreenProps = {
   roomId: string;
@@ -48,77 +50,98 @@ export function RoomLobbyScreen({ roomId, autoJoin = false }: RoomLobbyScreenPro
 
   if (roomQuery.isLoading) {
     return (
-      <View style={styles.center}>
-        <ActivityIndicator color="#2563eb" size="large" />
-        <Text style={styles.text}>Загрузка комнаты</Text>
-      </View>
+      <Screen>
+        <StateView title="Загрузка комнаты" loading />
+      </Screen>
     );
   }
 
   if (roomQuery.isError) {
     return (
-      <View style={styles.center}>
-        <Text style={styles.title}>Комната недоступна</Text>
-        <Text style={styles.text}>
-          {roomQuery.error instanceof Error
-            ? roomQuery.error.message
-            : "Ошибка при загрузке информации о комнате"}
-        </Text>
-        <AppButton title="Повторить" onPress={() => void roomQuery.refetch()} />
-      </View>
+      <Screen>
+        <StateView
+          title="Комната недоступна"
+          text={
+            roomQuery.error instanceof Error
+              ? roomQuery.error.message
+              : "Ошибка при загрузке информации о комнате"
+          }
+          action={<AppButton title="Повторить" onPress={() => void roomQuery.refetch()} />}
+        />
+      </Screen>
     );
   }
 
   const room = roomQuery.data;
 
   return (
-    <View style={styles.screen}>
-      <View style={styles.card}>
+    <Screen style={styles.screen}>
+      <Card style={styles.card}>
+        <View style={styles.preview}>
+          <Text style={styles.previewInitial}>
+            {(room?.name ?? "Комната").slice(0, 1).toUpperCase()}
+          </Text>
+        </View>
+        <View>
+          <Text style={styles.eyebrow}>
+            {room?.hidden ? "Вход по ссылке" : "Открытая комната"}
+          </Text>
         <Text style={styles.title}>{room?.name ?? "Комната"}</Text>
-        <Text style={styles.text}>
-          {room?.hidden ? "Вход по ссылке" : "Доступная комната"}
-        </Text>
+          <Text style={styles.text}>
+            Камера и микрофон используют ваши сохраненные настройки.
+          </Text>
+        </View>
         <AppButton
           title="Войти"
           loading={joinRoom.isPending || isConnecting}
           onPress={() => joinRoom.mutate()}
         />
-      </View>
-    </View>
+      </Card>
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
   screen: {
-    alignItems: "center",
     flex: 1,
     justifyContent: "center",
-    padding: 24,
-  },
-  center: {
-    alignItems: "center",
-    flex: 1,
-    gap: 12,
-    justifyContent: "center",
-    padding: 24,
+    padding: spacing.lg,
   },
   card: {
-    backgroundColor: "#fff",
-    borderColor: "#e5e7eb",
-    borderRadius: 8,
-    borderWidth: 1,
-    gap: 14,
+    gap: spacing.lg,
     maxWidth: 440,
-    padding: 20,
     width: "100%",
   },
+  preview: {
+    alignItems: "center",
+    alignSelf: "center",
+    backgroundColor: colors.backgroundSecondary,
+    borderRadius: 48,
+    height: 96,
+    justifyContent: "center",
+    width: 96,
+  },
+  previewInitial: {
+    color: colors.primaryDark,
+    fontSize: 42,
+    fontWeight: "800",
+  },
+  eyebrow: {
+    ...typography.captionStrong,
+    color: colors.primary,
+    marginBottom: spacing.xs,
+    textAlign: "center",
+    textTransform: "uppercase",
+  },
   title: {
-    color: "#111827",
-    fontSize: 24,
-    fontWeight: "700",
+    ...typography.h2,
+    color: colors.textPrimary,
+    textAlign: "center",
   },
   text: {
-    color: "#4b5563",
-    fontSize: 16,
+    ...typography.body,
+    color: colors.textSecondary,
+    marginTop: spacing.sm,
+    textAlign: "center",
   },
 });

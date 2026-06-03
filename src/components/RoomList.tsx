@@ -1,9 +1,11 @@
 import * as Clipboard from "expo-clipboard";
 import { Link, router } from "expo-router";
-import { Copy, Play, Trash2 } from "lucide-react-native";
+import { Copy, Play, Search, Trash2 } from "lucide-react-native";
 import { FlatList, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import Toast from "react-native-toast-message";
 import type { Room } from "@/api/types";
+import { IconCircleButton } from "@/components/ui";
+import { colors, radius, spacing, typography } from "@/theme/tokens";
 import { getRoomLink } from "@/utils/links";
 
 type RoomListProps = {
@@ -43,15 +45,18 @@ export function RoomList({
 
   return (
     <View style={styles.wrapper}>
-      <TextInput
-        autoCapitalize="none"
-        clearButtonMode="while-editing"
-        onChangeText={onSearchChange}
-        placeholder="Найти"
-        placeholderTextColor="#9ca3af"
-        style={styles.search}
-        value={search}
-      />
+      <View style={styles.searchBox}>
+        <Search color={colors.textSecondary} size={19} />
+        <TextInput
+          autoCapitalize="none"
+          clearButtonMode="while-editing"
+          onChangeText={onSearchChange}
+          placeholder="Найти комнату"
+          placeholderTextColor={colors.textPlaceholder}
+          style={styles.search}
+          value={search}
+        />
+      </View>
       <FlatList
         contentContainerStyle={rooms.length === 0 ? styles.emptyList : styles.list}
         data={rooms}
@@ -61,6 +66,7 @@ export function RoomList({
         renderItem={({ item }) => (
           <View style={styles.item}>
             <Pressable style={styles.itemMain} onPress={() => joinRoom(item)}>
+              <View style={styles.roomMark} />
               <Text numberOfLines={1} style={styles.itemTitle}>
                 {item.name}
               </Text>
@@ -69,28 +75,30 @@ export function RoomList({
               </Text>
             </Pressable>
             <View style={styles.actions}>
-              <Pressable
+              <IconCircleButton
                 accessibilityLabel="Войти"
-                style={styles.iconButton}
+                size={38}
                 onPress={() => joinRoom(item)}
               >
-                <Play color="#fff" size={18} />
-              </Pressable>
-              <Pressable
+                <Play color={colors.textLight} size={18} />
+              </IconCircleButton>
+              <IconCircleButton
                 accessibilityLabel="Скопировать ссылку"
-                style={styles.iconButton}
+                tone="light"
+                size={38}
                 onPress={() => void copyRoomLink(item)}
               >
-                <Copy color="#fff" size={18} />
-              </Pressable>
+                <Copy color={colors.primaryDark} size={18} />
+              </IconCircleButton>
               {item.can_manage ? (
-                <Pressable
+                <IconCircleButton
                   accessibilityLabel="Удалить"
-                  style={[styles.iconButton, styles.deleteButton]}
+                  tone="danger"
+                  size={38}
                   onPress={() => onDelete(item)}
                 >
-                  <Trash2 color="#fff" size={18} />
-                </Pressable>
+                  <Trash2 color={colors.textLight} size={18} />
+                </IconCircleButton>
               ) : null}
             </View>
           </View>
@@ -116,85 +124,86 @@ export function RoomList({
 const styles = StyleSheet.create({
   wrapper: {
     flex: 1,
-    gap: 12,
+    gap: spacing.md,
     minHeight: 0,
   },
-  search: {
-    backgroundColor: "#fff",
-    borderColor: "#dbe3ef",
-    borderRadius: 8,
+  searchBox: {
+    alignItems: "center",
+    backgroundColor: colors.surface,
+    borderColor: colors.secondaryBorder,
+    borderRadius: radius.md,
     borderWidth: 1,
-    color: "#111827",
-    fontSize: 16,
+    flexDirection: "row",
+    gap: spacing.sm,
     minHeight: 44,
-    paddingHorizontal: 14,
+    paddingHorizontal: spacing.md,
+  },
+  search: {
+    ...typography.body,
+    color: colors.textPrimary,
+    flex: 1,
+    paddingVertical: 0,
   },
   list: {
-    gap: 10,
-    paddingBottom: 24,
+    gap: spacing.md,
+    paddingBottom: spacing.xxl,
   },
   emptyList: {
     flexGrow: 1,
   },
   item: {
     alignItems: "center",
-    backgroundColor: "#fff",
-    borderColor: "#e5e7eb",
-    borderRadius: 8,
+    backgroundColor: colors.surface,
+    borderColor: colors.secondaryBorder,
+    borderRadius: radius.md,
     borderWidth: 1,
     flexDirection: "row",
-    gap: 12,
-    padding: 12,
+    gap: spacing.md,
+    padding: spacing.md,
   },
   itemMain: {
     flex: 1,
     minWidth: 0,
   },
+  roomMark: {
+    backgroundColor: colors.backgroundSecondary,
+    borderRadius: radius.pill,
+    height: 4,
+    marginBottom: spacing.sm,
+    width: 36,
+  },
   itemTitle: {
-    color: "#111827",
-    fontSize: 16,
-    fontWeight: "700",
+    ...typography.bodyStrong,
+    color: colors.textPrimary,
   },
   itemMeta: {
-    color: "#6b7280",
-    fontSize: 13,
-    marginTop: 4,
+    ...typography.caption,
+    color: colors.textSecondary,
+    marginTop: spacing.xs,
   },
   actions: {
     flexDirection: "row",
-    gap: 8,
-  },
-  iconButton: {
-    alignItems: "center",
-    backgroundColor: "#2563eb",
-    borderRadius: 22,
-    height: 36,
-    justifyContent: "center",
-    width: 36,
-  },
-  deleteButton: {
-    backgroundColor: "#dc2626",
+    gap: spacing.sm,
   },
   empty: {
     alignItems: "center",
     flex: 1,
     justifyContent: "center",
-    padding: 24,
+    padding: spacing.xxl,
   },
   emptyTitle: {
-    color: "#111827",
-    fontSize: 20,
-    fontWeight: "700",
+    ...typography.h3,
+    color: colors.textPrimary,
   },
   emptyText: {
-    color: "#6b7280",
-    fontSize: 15,
-    marginTop: 8,
+    ...typography.body,
+    color: colors.textSecondary,
+    marginTop: spacing.sm,
     textAlign: "center",
   },
   emptyLink: {
-    color: "#2563eb",
-    fontSize: 15,
-    marginTop: 16,
+    ...typography.button,
+    color: colors.primary,
+    marginTop: spacing.lg,
   },
 });
