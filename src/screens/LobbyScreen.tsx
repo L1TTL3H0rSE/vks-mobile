@@ -1,6 +1,20 @@
-import { Link } from "expo-router";
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useEffect, useMemo, useState } from "react";
+import {
+  ActivityIndicator,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
+import Toast from "react-native-toast-message";
 import { useAuthStore } from "@/auth/authStore";
+import { vksApi } from "@/api/vksApi";
+import type { Room } from "@/api/types";
+import { AppButton } from "@/components/AppButton";
+import { ConfirmModal } from "@/components/ConfirmModal";
+import { RoomFormModal } from "@/components/RoomFormModal";
+import { RoomList } from "@/components/RoomList";
 
 export function LobbyScreen() {
   const status = useAuthStore((state) => state.status);
@@ -10,26 +24,140 @@ export function LobbyScreen() {
   const logout = useAuthStore((state) => state.logout);
   const isLoading = status === "idle" || status === "loading";
   const isAuthenticated = status === "authenticated";
+  const queryClient = useQueryClient();
+  const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [createVisible, setCreateVisible] = useState(false);
+  const [roomName, setRoomName] = useState("");
+  const [roomHidden, setRoomHidden] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<Room | null>(null);
+
+  useEffect(() => {
+    const timeout = setTimeout(() => setDebouncedSearch(search.trim()), 400);
+    return () => clearTimeout(timeout);
+  }, [search]);
+
+  const canCreate = useMemo(() => {
+    if (!user) return false;
+    const allowedRoles = [
+      "/admins/vks",
+      "/employees",
+      "/employees/teachers",
+      "/admins",
+      "admins",
+      "employees",
+      "teachers",
+    ];
+    return allowedRoles.some((role) => user.roles.has(role));
+  }, [user]);
+
+  const roomsQuery = useQuery({
+    queryKey: ["rooms", debouncedSearch],
+    queryFn: async () => (await vksApi.getAvailableRooms(debouncedSearch)).data,
+    enabled: isAuthenticated,
+  });
+
+  const createRoom = useMutation({
+    mutationFn: async () =>
+      vksApi.createRoom({ name: roomName.trim(), hidden: roomHidden }),
+    onSuccess: async () => {
+      setCreateVisible(false);
+      setRoomName("");
+      setRoomHidden(false);
+      await queryClient.invalidateQueries({ queryKey: ["rooms"] });
+      Toast.show({ type: "success", text1: "Комната создана" });
+    },
+    onError: (err) => {
+      Toast.show({
+        type: "error",
+        text1: "Не удалось создать комнату",
+        text2: err instanceof Error ? err.message : String(err),
+      });
+    },
+  });
+
+  const deleteRoom = useMutation({
+    mutationFn: async (room: Room) => vksApi.deleteRoom(room.id),
+    onSuccess: async () => {
+      setDeleteTarget(null);
+      await queryClient.invalidateQueries({ queryKey: ["rooms"] });
+      Toast.show({ type: "success", text1: "Комната удалена" });
+    },
+    onError: (err) => {
+      Toast.show({
+        type: "error",
+        text1: "Не удалось удалить комнату",
+        text2: err instanceof Error ? err.message : String(err),
+      });
+    },
+  });
 
   return (
     <View style={styles.screen}>
-      <Text style={styles.title}>Kosygin VCS</Text>
       {isLoading ? (
         <ActivityIndicator color="#2563eb" size="large" />
       ) : isAuthenticated ? (
         <>
-          <Text style={styles.text}>
-            {user?.name ?? user?.username ?? "Вы авторизованы"}
-          </Text>
-          <Link href="/settings" style={styles.link}>
-            Настройки
-          </Link>
-          <Pressable style={styles.secondaryButton} onPress={() => void logout()}>
-            <Text style={styles.secondaryButtonText}>Выйти</Text>
-          </Pressable>
+          <View style={styles.header}>
+            <View style={styles.headerText}>
+              <Text style={styles.title}>Kosygin VCS</Text>
+              <Text style={styles.text}>
+                {user?.name ?? user?.username ?? "Вы авторизованы"}
+              </Text>
+            </View>
+            <View style={styles.headerActions}>
+              {canCreate ? (
+                <AppButton title="Создать" onPress={() => setCreateVisible(true)} />
+              ) : null}
+              <AppButton title="Выйти" variant="secondary" onPress={() => void logout()} />
+            </View>
+          </View>
+          {roomsQuery.isLoading ? (
+            <View style={styles.center}>
+              <ActivityIndicator color="#2563eb" size="large" />
+              <Text style={styles.text}>Загрузка комнат</Text>
+            </View>
+          ) : roomsQuery.isError ? (
+            <View style={styles.center}>
+              <Text style={styles.error}>Не удалось загрузить комнаты</Text>
+              <AppButton title="Повторить" onPress={() => void roomsQuery.refetch()} />
+            </View>
+          ) : (
+            <RoomList
+              rooms={roomsQuery.data ?? []}
+              search={search}
+              onSearchChange={setSearch}
+              onDelete={setDeleteTarget}
+              refreshing={roomsQuery.isRefetching}
+              onRefresh={() => void roomsQuery.refetch()}
+            />
+          )}
+          <RoomFormModal
+            visible={createVisible}
+            title="Создать комнату"
+            name={roomName}
+            hidden={roomHidden}
+            loading={createRoom.isPending}
+            onNameChange={setRoomName}
+            onHiddenChange={setRoomHidden}
+            onClose={() => setCreateVisible(false)}
+            onSubmit={() => createRoom.mutate()}
+          />
+          <ConfirmModal
+            visible={!!deleteTarget}
+            title="Удалить комнату"
+            description={`Комната "${deleteTarget?.name ?? ""}" станет недоступна.`}
+            confirmTitle="Удалить"
+            loading={deleteRoom.isPending}
+            onClose={() => setDeleteTarget(null)}
+            onConfirm={() => {
+              if (deleteTarget) deleteRoom.mutate(deleteTarget);
+            }}
+          />
         </>
       ) : (
         <>
+          <Text style={styles.title}>Kosygin VCS</Text>
           <Text style={styles.text}>Войдите, чтобы увидеть доступные комнаты</Text>
           {error ? <Text style={styles.error}>{error}</Text> : null}
           <Pressable style={styles.primaryButton} onPress={() => void login()}>
@@ -44,9 +172,30 @@ export function LobbyScreen() {
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
     padding: 24,
+  },
+  center: {
+    alignItems: "center",
+    flex: 1,
+    gap: 12,
+    justifyContent: "center",
+  },
+  header: {
+    alignItems: "flex-start",
+    flexDirection: "row",
+    gap: 16,
+    justifyContent: "space-between",
+    marginBottom: 20,
+  },
+  headerText: {
+    flex: 1,
+    minWidth: 0,
+  },
+  headerActions: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 10,
+    justifyContent: "flex-end",
   },
   title: {
     color: "#111827",
@@ -58,12 +207,8 @@ const styles = StyleSheet.create({
     fontSize: 16,
     marginTop: 8,
   },
-  link: {
-    color: "#2563eb",
-    fontSize: 16,
-    marginTop: 24,
-  },
   primaryButton: {
+    alignSelf: "center",
     backgroundColor: "#2563eb",
     borderRadius: 8,
     marginTop: 24,
