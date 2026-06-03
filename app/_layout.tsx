@@ -7,6 +7,7 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import Toast from "react-native-toast-message";
 import { AuthGate } from "@/auth/AuthGate";
+import { Navbar } from "@/components/Navbar";
 
 export default function RootLayout() {
   const [queryClient] = useState(
@@ -27,6 +28,7 @@ export default function RootLayout() {
         <SafeAreaView style={{ flex: 1, backgroundColor: "#f8fafd" }}>
           <QueryClientProvider client={queryClient}>
             <BottomSheetModalProvider>
+              <Navbar />
               <Stack
                 screenOptions={{
                   headerShown: false,

@@ -15,11 +15,10 @@ import { vksApi } from "@/api/vksApi";
 import type { Room } from "@/api/types";
 import { AppButton } from "@/components/AppButton";
 import { ConfirmModal } from "@/components/ConfirmModal";
-import { IconLogout } from "@/components/icons";
 import { LocalPreviewCard } from "@/components/LocalPreviewCard";
 import { RoomFormModal } from "@/components/RoomFormModal";
 import { RoomList } from "@/components/RoomList";
-import { IconCircleButton, Screen, StateView } from "@/components/ui";
+import { Screen, StateView } from "@/components/ui";
 import { colors, radius, spacing, typography } from "@/theme/tokens";
 
 export function LobbyScreen() {
@@ -27,7 +26,6 @@ export function LobbyScreen() {
   const user = useAuthStore((state) => state.user);
   const error = useAuthStore((state) => state.error);
   const login = useAuthStore((state) => state.login);
-  const logout = useAuthStore((state) => state.logout);
   const isLoading = status === "idle" || status === "loading";
   const isAuthenticated = status === "authenticated";
   const queryClient = useQueryClient();
@@ -139,14 +137,6 @@ export function LobbyScreen() {
                         : "У вас нет доступных комнат. Вы сможете присоединиться к конференции только по прямой ссылке"}
                   </Text>
                 </View>
-                <IconCircleButton
-                  accessibilityLabel="Выйти"
-                  tone="light"
-                  size={34}
-                  onPress={() => void logout()}
-                >
-                  <IconLogout color={colors.primaryDark} size={17} />
-                </IconCircleButton>
               </View>
               {canCreate ? (
                 <AppButton
