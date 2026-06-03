@@ -4,6 +4,7 @@ import { forwardRef, useMemo, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import type { Profile } from "@/api/types";
 import type { ChatMessage } from "@/livekit/livekitStore";
+import { colors, radius, spacing, typography } from "@/theme/tokens";
 import { getProfileName } from "@/utils/profile";
 
 type ChatSheetProps = {
@@ -58,12 +59,12 @@ export const ChatSheet = forwardRef<BottomSheetModal, ChatSheetProps>(
             onChangeText={setText}
             onSubmitEditing={submit}
             placeholder="Сообщение"
-            placeholderTextColor="#9ca3af"
+            placeholderTextColor={colors.textPlaceholder}
             style={styles.input}
             value={text}
           />
           <Pressable style={styles.sendButton} onPress={submit}>
-            <Send color="#fff" size={19} />
+            <Send color={colors.textLight} size={19} />
           </Pressable>
         </BottomSheetView>
       </BottomSheetModal>
@@ -75,71 +76,69 @@ ChatSheet.displayName = "ChatSheet";
 
 const styles = StyleSheet.create({
   header: {
-    paddingHorizontal: 18,
-    paddingTop: 8,
+    paddingHorizontal: spacing.xl,
+    paddingTop: spacing.sm,
   },
   title: {
-    color: "#111827",
-    fontSize: 20,
-    fontWeight: "800",
+    ...typography.h3,
+    color: colors.textPrimary,
   },
   list: {
-    gap: 8,
-    padding: 16,
+    gap: spacing.sm,
+    padding: spacing.lg,
   },
   message: {
-    borderRadius: 8,
+    borderRadius: radius.md,
     maxWidth: "86%",
-    padding: 10,
+    padding: spacing.md,
   },
   mine: {
     alignSelf: "flex-end",
-    backgroundColor: "#dbeafe",
+    backgroundColor: colors.backgroundSecondary,
   },
   other: {
     alignSelf: "flex-start",
-    backgroundColor: "#f3f4f6",
+    backgroundColor: colors.placeholder,
   },
   author: {
-    color: "#6b7280",
-    fontSize: 12,
-    fontWeight: "700",
+    ...typography.captionStrong,
+    color: colors.textSecondary,
   },
   messageText: {
-    color: "#111827",
-    fontSize: 15,
-    marginTop: 3,
+    ...typography.body,
+    color: colors.textPrimary,
+    marginTop: spacing.xs,
   },
   empty: {
     alignItems: "center",
-    padding: 24,
+    padding: spacing.xxl,
   },
   emptyText: {
-    color: "#6b7280",
-    fontSize: 15,
+    ...typography.body,
+    color: colors.textSecondary,
   },
   inputRow: {
     alignItems: "center",
-    borderTopColor: "#e5e7eb",
+    borderTopColor: colors.secondaryBorder,
     borderTopWidth: 1,
     flexDirection: "row",
-    gap: 10,
-    padding: 12,
+    gap: spacing.md,
+    padding: spacing.md,
   },
   input: {
-    backgroundColor: "#fff",
-    borderColor: "#d1d5db",
-    borderRadius: 8,
+    ...typography.body,
+    backgroundColor: colors.surface,
+    borderColor: colors.secondaryBorder,
+    borderRadius: radius.md,
     borderWidth: 1,
-    color: "#111827",
+    color: colors.textPrimary,
     flex: 1,
-    fontSize: 16,
     minHeight: 42,
-    paddingHorizontal: 12,
+    paddingHorizontal: spacing.md,
   },
   sendButton: {
     alignItems: "center",
-    backgroundColor: "#2563eb",
+    backgroundColor: colors.primary,
     borderRadius: 21,
     height: 42,
     justifyContent: "center",

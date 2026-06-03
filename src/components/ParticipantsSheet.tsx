@@ -3,7 +3,9 @@ import { CameraOff, Mic, MicOff, MonitorX, PhoneOff } from "lucide-react-native"
 import { forwardRef, useMemo } from "react";
 import { Image, Pressable, StyleSheet, Text, View } from "react-native";
 import type { Profile } from "@/api/types";
+import { IconCircleButton } from "@/components/ui";
 import type { ParticipantSnapshot } from "@/livekit/livekitStore";
+import { colors, radius, spacing, typography } from "@/theme/tokens";
 import { getProfileAvatarUrl, getProfileName } from "@/utils/profile";
 
 type ParticipantsSheetProps = {
@@ -80,29 +82,47 @@ export const ParticipantsSheet = forwardRef<BottomSheetModal, ParticipantsSheetP
                 </View>
                 {canManageRoom && !item.isLocal ? (
                   <View style={styles.actions}>
-                    <Pressable
+                    <IconCircleButton
+                      tone="light"
+                      size={32}
                       onPress={() =>
                         item.micEnabled ? onMute(item.identity) : onUnmute(item.identity)
                       }
                     >
                       {item.micEnabled ? (
-                        <MicOff color="#4b5563" size={19} />
+                        <MicOff color={colors.primaryDark} size={16} />
                       ) : (
-                        <Mic color="#4b5563" size={19} />
+                        <Mic color={colors.primaryDark} size={16} />
                       )}
-                    </Pressable>
-                    <Pressable onPress={() => onSoftMicrophoneDisable(item.identity)}>
-                      <MicOff color="#4b5563" size={19} />
-                    </Pressable>
-                    <Pressable onPress={() => onSoftCameraDisable(item.identity)}>
-                      <CameraOff color="#4b5563" size={19} />
-                    </Pressable>
-                    <Pressable onPress={() => onSoftScreenDisable(item.identity)}>
-                      <MonitorX color="#4b5563" size={19} />
-                    </Pressable>
-                    <Pressable onPress={() => onKick(item.identity)}>
-                      <PhoneOff color="#dc2626" size={19} />
-                    </Pressable>
+                    </IconCircleButton>
+                    <IconCircleButton
+                      tone="light"
+                      size={32}
+                      onPress={() => onSoftMicrophoneDisable(item.identity)}
+                    >
+                      <MicOff color={colors.primaryDark} size={16} />
+                    </IconCircleButton>
+                    <IconCircleButton
+                      tone="light"
+                      size={32}
+                      onPress={() => onSoftCameraDisable(item.identity)}
+                    >
+                      <CameraOff color={colors.primaryDark} size={16} />
+                    </IconCircleButton>
+                    <IconCircleButton
+                      tone="light"
+                      size={32}
+                      onPress={() => onSoftScreenDisable(item.identity)}
+                    >
+                      <MonitorX color={colors.primaryDark} size={16} />
+                    </IconCircleButton>
+                    <IconCircleButton
+                      tone="danger"
+                      size={32}
+                      onPress={() => onKick(item.identity)}
+                    >
+                      <PhoneOff color={colors.textLight} size={16} />
+                    </IconCircleButton>
                   </View>
                 ) : null}
               </Pressable>
@@ -118,36 +138,39 @@ ParticipantsSheet.displayName = "ParticipantsSheet";
 
 const styles = StyleSheet.create({
   header: {
-    paddingHorizontal: 18,
-    paddingTop: 8,
+    paddingHorizontal: spacing.xl,
+    paddingTop: spacing.sm,
   },
   title: {
-    color: "#111827",
-    fontSize: 20,
-    fontWeight: "800",
+    ...typography.h3,
+    color: colors.textPrimary,
   },
   subtitle: {
-    color: "#6b7280",
-    fontSize: 14,
-    marginTop: 4,
+    ...typography.caption,
+    color: colors.textSecondary,
+    marginTop: spacing.xs,
   },
   list: {
-    gap: 8,
-    padding: 16,
+    gap: spacing.sm,
+    padding: spacing.lg,
   },
   row: {
     alignItems: "center",
-    borderRadius: 8,
+    backgroundColor: colors.surface,
+    borderColor: colors.secondaryBorder,
+    borderRadius: radius.md,
+    borderWidth: 1,
     flexDirection: "row",
-    gap: 12,
-    padding: 10,
+    gap: spacing.md,
+    padding: spacing.md,
   },
   pinnedRow: {
-    backgroundColor: "#eef2ff",
+    backgroundColor: colors.backgroundSecondary,
+    borderColor: colors.primaryOutline,
   },
   avatar: {
     alignItems: "center",
-    backgroundColor: "#2563eb",
+    backgroundColor: colors.primary,
     borderRadius: 18,
     height: 36,
     justifyContent: "center",
@@ -159,7 +182,7 @@ const styles = StyleSheet.create({
     width: 36,
   },
   avatarText: {
-    color: "#fff",
+    color: colors.textLight,
     fontSize: 15,
     fontWeight: "800",
   },
@@ -168,17 +191,19 @@ const styles = StyleSheet.create({
     minWidth: 0,
   },
   name: {
-    color: "#111827",
-    fontSize: 15,
-    fontWeight: "700",
+    ...typography.button,
+    color: colors.textPrimary,
   },
   meta: {
-    color: "#6b7280",
-    fontSize: 12,
-    marginTop: 2,
+    ...typography.caption,
+    color: colors.textSecondary,
+    marginTop: spacing.xxs,
   },
   actions: {
     flexDirection: "row",
-    gap: 12,
+    flexWrap: "wrap",
+    gap: spacing.xs,
+    justifyContent: "flex-end",
+    maxWidth: 112,
   },
 });
