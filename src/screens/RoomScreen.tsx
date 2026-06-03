@@ -2,7 +2,7 @@ import { BottomSheetModal } from "@gorhom/bottom-sheet";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { router } from "expo-router";
 import { useMemo, useRef } from "react";
-import { FlatList, StyleSheet, Text, View } from "react-native";
+import { ScrollView, StyleSheet, Text, View, useWindowDimensions } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Toast from "react-native-toast-message";
 import { vksApi } from "@/api/vksApi";
@@ -12,7 +12,9 @@ import { AppButton } from "@/components/AppButton";
 import { ParticipantTile } from "@/components/ParticipantTile";
 import { ParticipantsSheet } from "@/components/ParticipantsSheet";
 import { RoomControls } from "@/components/RoomControls";
+import { Card, Screen, StateView } from "@/components/ui";
 import { useLiveKitStore } from "@/livekit/livekitStore";
+import { colors, spacing, typography } from "@/theme/tokens";
 import { getProfileAvatarUrl, getProfileName } from "@/utils/profile";
 
 type RoomScreenProps = {
@@ -21,6 +23,7 @@ type RoomScreenProps = {
 
 export function RoomScreen({ roomId }: RoomScreenProps) {
   const insets = useSafeAreaInsets();
+  const { height } = useWindowDimensions();
   const participantsSheetRef = useRef<BottomSheetModal>(null);
   const chatSheetRef = useRef<BottomSheetModal>(null);
   const rawParticipants = useLiveKitStore((state) => state.participants);
@@ -64,6 +67,9 @@ export function RoomScreen({ roomId }: RoomScreenProps) {
     if (!pinned) return participants;
     return [pinned, ...participants.filter((item) => item.identity !== pinnedIdentity)];
   }, [participants, pinnedIdentity]);
+  const featuredParticipant = displayParticipants[0] ?? null;
+  const secondaryParticipants = displayParticipants.slice(1);
+  const stageHeight = Math.max(260, Math.min(480, height * 0.48));
 
   const moderatorAction = useMutation({
     mutationFn: async ({
@@ -113,21 +119,30 @@ export function RoomScreen({ roomId }: RoomScreenProps) {
       });
     },
   });
-  const columns = displayParticipants.length <= 1 ? 1 : 2;
+  const statusText =
+    connectionState === "connected"
+      ? "Подключено"
+      : connectionState === "connecting"
+        ? "Подключение"
+        : connectionState === "reconnecting"
+          ? "Переподключение"
+          : "Отключено";
 
   return (
-    <View style={styles.screen}>
-      <View style={styles.header}>
-        <Text numberOfLines={1} style={styles.title}>
-          {room?.name ?? `Комната ${roomId}`}
-        </Text>
-        <Text style={styles.text}>
-          {participants.length} онлайн · {connectionState}
-        </Text>
+    <Screen style={styles.screen}>
+      <View style={styles.topBar}>
+        <View style={styles.titleBlock}>
+          <Text numberOfLines={1} style={styles.title}>
+            {room?.name ?? `Комната ${roomId}`}
+          </Text>
+          <Text style={styles.text}>
+            {participants.length} онлайн · {statusText}
+          </Text>
+        </View>
         {room?.can_manage ? (
-          <View style={styles.headerAction}>
+          <View style={styles.endAction}>
             <AppButton
-              title="Завершить встречу"
+              title="Завершить"
               variant="danger"
               loading={closeRoom.isPending}
               onPress={() => closeRoom.mutate()}
@@ -135,40 +150,71 @@ export function RoomScreen({ roomId }: RoomScreenProps) {
           </View>
         ) : null}
       </View>
-      <FlatList
-        key={columns}
-        numColumns={columns}
-        contentContainerStyle={styles.grid}
-        columnWrapperStyle={columns > 1 ? styles.gridRow : undefined}
-        data={displayParticipants}
-        keyExtractor={(participant) => participant.sid || participant.identity}
-        renderItem={({ item }) => (
-          <View style={styles.tileWrapper}>
+
+      <ScrollView contentContainerStyle={styles.content}>
+        {featuredParticipant ? (
+          <View style={[styles.stage, { height: stageHeight }]}>
             <ParticipantTile
-              participant={item}
+              participant={featuredParticipant}
               displayName={getProfileName(
-                profiles.get(item.identity),
-                item.name || item.identity,
+                profiles.get(featuredParticipant.identity),
+                featuredParticipant.name || featuredParticipant.identity,
               )}
-              avatarUrl={getProfileAvatarUrl(profiles.get(item.identity))}
-              pinned={item.identity === pinnedIdentity}
+              avatarUrl={getProfileAvatarUrl(profiles.get(featuredParticipant.identity))}
+              pinned={featuredParticipant.identity === pinnedIdentity}
               onPress={() =>
                 setPinnedIdentity(
-                  item.identity === pinnedIdentity ? null : item.identity,
+                  featuredParticipant.identity === pinnedIdentity
+                    ? null
+                    : featuredParticipant.identity,
                 )
               }
             />
           </View>
+        ) : (
+          <Card style={[styles.stage, styles.emptyStage, { height: stageHeight }]}>
+            <StateView
+              title="Подключение устанавливается"
+              text="Участники появятся после подключения к комнате."
+              loading={connectionState === "connecting"}
+            />
+          </Card>
         )}
-        ListEmptyComponent={
-          <View style={styles.empty}>
-            <Text style={styles.emptyTitle}>Подключение устанавливается</Text>
-            <Text style={styles.emptyText}>
-              Участники появятся после подключения к комнате.
-            </Text>
+
+        {secondaryParticipants.length > 0 ? (
+          <View style={styles.strip}>
+            {secondaryParticipants.map((participant) => (
+              <View key={participant.sid || participant.identity} style={styles.stripTile}>
+                <ParticipantTile
+                  compact
+                  participant={participant}
+                  displayName={getProfileName(
+                    profiles.get(participant.identity),
+                    participant.name || participant.identity,
+                  )}
+                  avatarUrl={getProfileAvatarUrl(profiles.get(participant.identity))}
+                  pinned={participant.identity === pinnedIdentity}
+                  onPress={() =>
+                    setPinnedIdentity(
+                      participant.identity === pinnedIdentity
+                        ? null
+                        : participant.identity,
+                    )
+                  }
+                />
+              </View>
+            ))}
           </View>
-        }
-      />
+        ) : (
+          <Card style={styles.emptyParticipants}>
+            <Text style={styles.emptyTitle}>Вы пока один в комнате</Text>
+            <Text style={styles.emptyText}>
+              Когда подключатся другие участники, они появятся здесь.
+            </Text>
+          </Card>
+        )}
+      </ScrollView>
+
       <View style={{ paddingBottom: insets.bottom }}>
         <RoomControls
           cameraEnabled={cameraEnabled}
@@ -210,61 +256,72 @@ export function RoomScreen({ roomId }: RoomScreenProps) {
         profiles={profiles}
         onSend={(text) => void sendMessage(text)}
       />
-    </View>
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
+    backgroundColor: colors.background,
   },
-  header: {
-    backgroundColor: "#fff",
-    borderBottomColor: "#e5e7eb",
+  topBar: {
+    alignItems: "center",
+    backgroundColor: colors.surface,
+    borderBottomColor: colors.secondaryBorder,
     borderBottomWidth: 1,
-    padding: 16,
+    flexDirection: "row",
+    gap: spacing.md,
+    justifyContent: "space-between",
+    padding: spacing.lg,
+  },
+  titleBlock: {
+    flex: 1,
+    minWidth: 0,
   },
   title: {
-    color: "#111827",
-    fontSize: 20,
-    fontWeight: "700",
+    ...typography.h3,
+    color: colors.textPrimary,
   },
   text: {
-    color: "#4b5563",
-    fontSize: 14,
-    marginTop: 8,
+    ...typography.caption,
+    color: colors.textSecondary,
+    marginTop: spacing.xs,
   },
-  headerAction: {
-    alignItems: "flex-start",
-    marginTop: 12,
+  endAction: {
+    flexShrink: 0,
   },
-  grid: {
-    gap: 12,
-    padding: 12,
+  content: {
+    gap: spacing.md,
     flexGrow: 1,
+    padding: spacing.md,
   },
-  gridRow: {
-    gap: 12,
+  stage: {
+    width: "100%",
   },
-  tileWrapper: {
-    flex: 1,
-  },
-  empty: {
-    alignItems: "center",
-    flex: 1,
+  emptyStage: {
     justifyContent: "center",
-    padding: 24,
+    padding: 0,
+  },
+  strip: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: spacing.md,
+  },
+  stripTile: {
+    flexBasis: "47%",
+    flexGrow: 1,
+    minWidth: 148,
+  },
+  emptyParticipants: {
+    gap: spacing.xs,
   },
   emptyTitle: {
-    color: "#111827",
-    fontSize: 20,
-    fontWeight: "700",
+    ...typography.bodyStrong,
+    color: colors.textPrimary,
   },
   emptyText: {
-    color: "#6b7280",
-    fontSize: 15,
-    lineHeight: 21,
-    marginTop: 8,
-    textAlign: "center",
+    ...typography.caption,
+    color: colors.textSecondary,
   },
 });

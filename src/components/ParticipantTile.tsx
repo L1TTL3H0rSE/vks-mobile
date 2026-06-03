@@ -2,12 +2,14 @@ import { VideoView } from "@livekit/react-native";
 import { Mic, MicOff, Video, VideoOff } from "lucide-react-native";
 import { Image, Pressable, StyleSheet, Text, View } from "react-native";
 import type { ParticipantSnapshot } from "@/livekit/livekitStore";
+import { colors, radius, spacing, typography } from "@/theme/tokens";
 
 type ParticipantTileProps = {
   participant: ParticipantSnapshot;
   displayName?: string;
   avatarUrl?: string;
   pinned?: boolean;
+  compact?: boolean;
   onPress?: () => void;
 };
 
@@ -16,6 +18,7 @@ export function ParticipantTile({
   displayName,
   avatarUrl,
   pinned,
+  compact,
   onPress,
 }: ParticipantTileProps) {
   const videoTrack = participant.cam?.videoTrack ?? participant.screen?.videoTrack;
@@ -23,7 +26,7 @@ export function ParticipantTile({
 
   return (
     <Pressable
-      style={[styles.tile, pinned ? styles.pinned : null]}
+      style={[styles.tile, compact ? styles.compactTile : null, pinned ? styles.pinned : null]}
       onPress={onPress}
     >
       {videoTrack ? (
@@ -33,12 +36,14 @@ export function ParticipantTile({
           {avatarUrl ? (
             <Image source={{ uri: avatarUrl }} style={styles.avatar} />
           ) : (
-            <Text style={styles.initial}>{name.slice(0, 1).toUpperCase()}</Text>
+          <Text style={[styles.initial, compact ? styles.compactInitial : null]}>
+            {name.slice(0, 1).toUpperCase()}
+          </Text>
           )}
         </View>
       )}
       <View style={styles.footer}>
-        <Text numberOfLines={1} style={styles.name}>
+        <Text numberOfLines={1} style={[styles.name, compact ? styles.compactName : null]}>
           {name}
           {participant.isLocal ? " (вы)" : ""}
         </Text>
@@ -63,14 +68,18 @@ export function ParticipantTile({
 const styles = StyleSheet.create({
   tile: {
     aspectRatio: 16 / 9,
-    backgroundColor: "#111827",
-    borderRadius: 8,
+    backgroundColor: colors.darkSurface,
+    borderRadius: radius.md,
     overflow: "hidden",
     position: "relative",
     width: "100%",
   },
+  compactTile: {
+    aspectRatio: 1,
+    minHeight: 116,
+  },
   pinned: {
-    borderColor: "#2563eb",
+    borderColor: colors.primary,
     borderWidth: 2,
   },
   video: {
@@ -83,9 +92,12 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   initial: {
-    color: "#fff",
+    color: colors.textLight,
     fontSize: 40,
     fontWeight: "800",
+  },
+  compactInitial: {
+    fontSize: 28,
   },
   avatar: {
     borderRadius: 44,
@@ -94,29 +106,32 @@ const styles = StyleSheet.create({
   },
   footer: {
     alignItems: "center",
-    backgroundColor: "rgba(17, 24, 39, 0.76)",
+    backgroundColor: colors.darkOverlay,
     bottom: 0,
     flexDirection: "row",
-    gap: 8,
+    gap: spacing.sm,
     justifyContent: "space-between",
     left: 0,
-    padding: 8,
+    padding: spacing.sm,
     position: "absolute",
     right: 0,
   },
   name: {
-    color: "#fff",
+    ...typography.captionStrong,
+    color: colors.textLight,
     flex: 1,
-    fontSize: 13,
-    fontWeight: "700",
+  },
+  compactName: {
+    fontSize: 12,
+    lineHeight: 16,
   },
   pin: {
-    color: "#bfdbfe",
+    color: colors.primaryOutline,
     fontSize: 11,
     fontWeight: "700",
   },
   icons: {
     flexDirection: "row",
-    gap: 6,
+    gap: spacing.xs,
   },
 });

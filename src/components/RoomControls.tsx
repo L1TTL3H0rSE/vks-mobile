@@ -38,50 +38,50 @@ export function RoomControls({
       <IconCircleButton
         accessibilityLabel="Микрофон"
         tone={microphoneEnabled ? "primary" : "muted"}
-        size={48}
+        size={44}
         onPress={onMicrophone}
       >
-        {microphoneEnabled ? <Mic color={colors.textLight} size={22} /> : <MicOff color={colors.textLight} size={22} />}
+        {microphoneEnabled ? <Mic color={colors.textLight} size={21} /> : <MicOff color={colors.textLight} size={21} />}
       </IconCircleButton>
       <IconCircleButton
         accessibilityLabel="Камера"
         tone={cameraEnabled ? "primary" : "muted"}
-        size={48}
+        size={44}
         onPress={onCamera}
       >
-        {cameraEnabled ? <Video color={colors.textLight} size={22} /> : <VideoOff color={colors.textLight} size={22} />}
+        {cameraEnabled ? <Video color={colors.textLight} size={21} /> : <VideoOff color={colors.textLight} size={21} />}
       </IconCircleButton>
       <IconCircleButton
         accessibilityLabel="Участники"
         tone="secondary"
-        size={48}
+        size={44}
         onPress={onParticipants}
       >
-        <Users color={colors.textLight} size={22} />
+        <Users color={colors.textLight} size={21} />
       </IconCircleButton>
       <IconCircleButton
         accessibilityLabel="Чат"
         tone="secondary"
-        size={48}
+        size={44}
         onPress={onChat}
       >
-        <MessageCircle color={colors.textLight} size={22} />
+        <MessageCircle color={colors.textLight} size={21} />
       </IconCircleButton>
       <IconCircleButton
         accessibilityLabel="Настройки"
         tone="secondary"
-        size={48}
+        size={44}
         onPress={onSettings}
       >
-        <Settings color={colors.textLight} size={22} />
+        <Settings color={colors.textLight} size={21} />
       </IconCircleButton>
       <IconCircleButton
         accessibilityLabel="Выйти"
         tone="danger"
-        size={48}
+        size={44}
         onPress={onDisconnect}
       >
-        <LogOut color={colors.textLight} size={22} />
+        <LogOut color={colors.textLight} size={21} />
       </IconCircleButton>
     </View>
   );
@@ -94,8 +94,8 @@ const styles = StyleSheet.create({
     borderTopColor: colors.secondaryBorder,
     borderTopWidth: 1,
     flexDirection: "row",
-    gap: spacing.md,
+    gap: spacing.sm,
     justifyContent: "space-around",
-    padding: spacing.lg,
+    padding: spacing.md,
   },
 });
