@@ -147,7 +147,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         user: null,
         error: error instanceof Error ? error.message : String(error),
       });
-      throw error;
     }
   },
 

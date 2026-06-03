@@ -21,7 +21,11 @@ export function RoomScreen({ roomId }: RoomScreenProps) {
   const insets = useSafeAreaInsets();
   const participantsSheetRef = useRef<BottomSheetModal>(null);
   const chatSheetRef = useRef<BottomSheetModal>(null);
-  const participants = useLiveKitStore((state) => state.participants);
+  const rawParticipants = useLiveKitStore((state) => state.participants);
+  const participants = useMemo(
+    () => (Array.isArray(rawParticipants) ? rawParticipants : []),
+    [rawParticipants],
+  );
   const messages = useLiveKitStore((state) => state.messages);
   const local = useLiveKitStore((state) => state.local);
   const cameraEnabled = useLiveKitStore((state) => state.cameraEnabled);
@@ -46,7 +50,7 @@ export function RoomScreen({ roomId }: RoomScreenProps) {
     enabled: profileIds.length > 0,
   });
   const profiles = useMemo(() => {
-    const items = profilesQuery.data ?? [];
+    const items = Array.isArray(profilesQuery.data) ? profilesQuery.data : [];
     return new Map(items.map((profile) => [profile.user_id, profile]));
   }, [profilesQuery.data]);
 

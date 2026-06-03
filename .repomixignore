@@ -1,0 +1,35 @@
+# Dependencies and generated state
+node_modules/
+.expo/
+.git/
+.claude/
+
+# Native/build outputs not useful for JS/Expo context
+android/
+dist/
+build/
+coverage/
+
+# Large/binary assets
+assets/*.png
+assets/*.jpg
+assets/*.jpeg
+assets/*.gif
+assets/*.webp
+assets/*.ico
+
+# Local secrets
+.env
+.env.*
+!.env.example
+
+# Lockfiles and generated package output
+pnpm-lock.yaml
+package-lock.json
+yarn.lock
+bun.lockb
+repomix-output.*
+
+# Legal/agent-local context not needed in packed app code
+LICENSE
+CLAUDE.md
