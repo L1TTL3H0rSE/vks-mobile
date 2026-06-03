@@ -1,5 +1,6 @@
 import { BottomSheetModal } from "@gorhom/bottom-sheet";
 import { useMutation, useQuery } from "@tanstack/react-query";
+import { router } from "expo-router";
 import { useMemo, useRef } from "react";
 import { FlatList, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -177,6 +178,7 @@ export function RoomScreen({ roomId }: RoomScreenProps) {
           onDisconnect={() => void leaveRoom()}
           onParticipants={() => participantsSheetRef.current?.present()}
           onChat={() => chatSheetRef.current?.present()}
+          onSettings={() => router.push("/settings")}
         />
       </View>
       <ParticipantsSheet

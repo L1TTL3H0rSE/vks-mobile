@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { router } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
@@ -106,6 +107,11 @@ export function LobbyScreen() {
               </Text>
             </View>
             <View style={styles.headerActions}>
+              <AppButton
+                title="Настройки"
+                variant="secondary"
+                onPress={() => router.push("/settings")}
+              />
               {canCreate ? (
                 <AppButton title="Создать" onPress={() => setCreateVisible(true)} />
               ) : null}
@@ -163,6 +169,13 @@ export function LobbyScreen() {
           <Pressable style={styles.primaryButton} onPress={() => void login()}>
             <Text style={styles.primaryButtonText}>Войти через Keycloak</Text>
           </Pressable>
+          <View style={styles.loginSettings}>
+            <AppButton
+              title="Настройки"
+              variant="ghost"
+              onPress={() => router.push("/settings")}
+            />
+          </View>
         </>
       )}
     </View>
@@ -238,5 +251,9 @@ const styles = StyleSheet.create({
     fontSize: 14,
     marginTop: 12,
     textAlign: "center",
+  },
+  loginSettings: {
+    alignItems: "center",
+    marginTop: 12,
   },
 });

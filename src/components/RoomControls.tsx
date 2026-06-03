@@ -1,4 +1,13 @@
-import { LogOut, MessageCircle, Mic, MicOff, Users, Video, VideoOff } from "lucide-react-native";
+import {
+  LogOut,
+  MessageCircle,
+  Mic,
+  MicOff,
+  Settings,
+  Users,
+  Video,
+  VideoOff,
+} from "lucide-react-native";
 import { Pressable, StyleSheet, View } from "react-native";
 
 type RoomControlsProps = {
@@ -9,6 +18,7 @@ type RoomControlsProps = {
   onDisconnect: () => void;
   onParticipants: () => void;
   onChat: () => void;
+  onSettings: () => void;
 };
 
 export function RoomControls({
@@ -19,6 +29,7 @@ export function RoomControls({
   onDisconnect,
   onParticipants,
   onChat,
+  onSettings,
 }: RoomControlsProps) {
   return (
     <View style={styles.wrapper}>
@@ -49,6 +60,13 @@ export function RoomControls({
         onPress={onChat}
       >
         <MessageCircle color="#fff" size={22} />
+      </Pressable>
+      <Pressable
+        accessibilityLabel="Настройки"
+        style={[styles.button, styles.secondary]}
+        onPress={onSettings}
+      >
+        <Settings color="#fff" size={22} />
       </Pressable>
       <Pressable
         accessibilityLabel="Выйти"
