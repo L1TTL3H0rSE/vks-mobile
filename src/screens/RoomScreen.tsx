@@ -1,7 +1,7 @@
 import { BottomSheetModal } from "@gorhom/bottom-sheet";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { router } from "expo-router";
-import { useMemo, useRef } from "react";
+import { useMemo, useRef, useState } from "react";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Toast from "react-native-toast-message";
@@ -9,11 +9,16 @@ import { vksApi } from "@/api/vksApi";
 import { idApi } from "@/api/idApi";
 import { ChatSheet } from "@/components/ChatSheet";
 import { AppButton } from "@/components/AppButton";
+import { ParticipantActionSheet } from "@/components/ParticipantActionSheet";
 import { ParticipantTile } from "@/components/ParticipantTile";
 import { ParticipantsSheet } from "@/components/ParticipantsSheet";
 import { RoomControls } from "@/components/RoomControls";
 import { Card, Screen, StateView } from "@/components/ui";
-import { useLiveKitStore } from "@/livekit/livekitStore";
+import {
+  defaultParticipantSettings,
+  useLiveKitStore,
+  type ParticipantSnapshot,
+} from "@/livekit/livekitStore";
 import { colors, spacing, typography } from "@/theme/tokens";
 import { getProfileAvatarUrl, getProfileName } from "@/utils/profile";
 
@@ -24,7 +29,10 @@ type RoomScreenProps = {
 export function RoomScreen({ roomId }: RoomScreenProps) {
   const insets = useSafeAreaInsets();
   const participantsSheetRef = useRef<BottomSheetModal>(null);
+  const participantActionSheetRef = useRef<BottomSheetModal>(null);
   const chatSheetRef = useRef<BottomSheetModal>(null);
+  const [selectedParticipant, setSelectedParticipant] =
+    useState<ParticipantSnapshot | null>(null);
   const rawParticipants = useLiveKitStore((state) => state.participants);
   const participants = useMemo(
     () => (Array.isArray(rawParticipants) ? rawParticipants : []),
@@ -41,6 +49,9 @@ export function RoomScreen({ roomId }: RoomScreenProps) {
   const setPinnedIdentity = useLiveKitStore((state) => state.setPinnedIdentity);
   const sendMessage = useLiveKitStore((state) => state.sendMessage);
   const leaveRoom = useLiveKitStore((state) => state.leaveRoom);
+  const participantSettings = useLiveKitStore((state) => state.participantSettings);
+  const toggleParticipantMuted = useLiveKitStore((state) => state.toggleParticipantMuted);
+  const setParticipantVolume = useLiveKitStore((state) => state.setParticipantVolume);
   const roomQuery = useQuery({
     queryKey: ["room", roomId],
     queryFn: async () => (await vksApi.getRoomById(roomId)).data,
@@ -83,6 +94,14 @@ export function RoomScreen({ roomId }: RoomScreenProps) {
   }, [participants, pinnedIdentity]);
   const featuredParticipant = displayParticipants[0] ?? null;
   const secondaryParticipants = displayParticipants.slice(1);
+  const selectedSettings = selectedParticipant
+    ? (participantSettings[selectedParticipant.identity] ?? defaultParticipantSettings)
+    : defaultParticipantSettings;
+
+  function openParticipantMenu(participant: ParticipantSnapshot) {
+    setSelectedParticipant(participant);
+    requestAnimationFrame(() => participantActionSheetRef.current?.present());
+  }
 
   const moderatorAction = useMutation({
     mutationFn: async ({
@@ -184,7 +203,7 @@ export function RoomScreen({ roomId }: RoomScreenProps) {
                     : featuredParticipant.identity,
                 )
               }
-              onMenuPress={() => participantsSheetRef.current?.present()}
+              onMenuPress={() => openParticipantMenu(featuredParticipant)}
               onMutePress={() =>
                 moderatorAction.mutate({ action: "mute", identity: featuredParticipant.identity })
               }
@@ -226,7 +245,7 @@ export function RoomScreen({ roomId }: RoomScreenProps) {
                         : participant.identity,
                       )
                   }
-                  onMenuPress={() => participantsSheetRef.current?.present()}
+                  onMenuPress={() => openParticipantMenu(participant)}
                   onMutePress={() =>
                     moderatorAction.mutate({ action: "mute", identity: participant.identity })
                   }
@@ -263,11 +282,18 @@ export function RoomScreen({ roomId }: RoomScreenProps) {
         pinnedIdentity={pinnedIdentity}
         canManageRoom={room?.can_manage}
         onPin={setPinnedIdentity}
+        onParticipantMenu={openParticipantMenu}
+      />
+      <ParticipantActionSheet
+        ref={participantActionSheetRef}
+        canManageRoom={room?.can_manage}
+        participant={selectedParticipant}
+        profile={selectedParticipant ? profiles.get(selectedParticipant.identity) : undefined}
+        settings={selectedSettings}
+        onClose={() => setSelectedParticipant(null)}
+        onToggleMute={toggleParticipantMuted}
+        onVolumeChange={setParticipantVolume}
         onKick={(identity) => moderatorAction.mutate({ action: "kick", identity })}
-        onMute={(identity) => moderatorAction.mutate({ action: "mute", identity })}
-        onUnmute={(identity) =>
-          moderatorAction.mutate({ action: "unmute", identity })
-        }
         onSoftMicrophoneDisable={(identity) =>
           moderatorAction.mutate({ action: "mic", identity })
         }

@@ -3,10 +3,8 @@ import { forwardRef, useMemo } from "react";
 import { Image, Pressable, StyleSheet, Text, View } from "react-native";
 import type { Profile } from "@/api/types";
 import {
-  IconCallRemove,
-  IconCameraSlash,
-  IconMicrophone,
   IconMicrophoneSlash,
+  IconMore,
 } from "@/components/icons";
 import { IconCircleButton } from "@/components/ui";
 import type { ParticipantSnapshot } from "@/livekit/livekitStore";
@@ -19,12 +17,7 @@ type ParticipantsSheetProps = {
   pinnedIdentity: string | null;
   canManageRoom?: boolean;
   onPin: (identity: string | null) => void;
-  onKick: (identity: string) => void;
-  onMute: (identity: string) => void;
-  onUnmute: (identity: string) => void;
-  onSoftMicrophoneDisable: (identity: string) => void;
-  onSoftCameraDisable: (identity: string) => void;
-  onSoftScreenDisable: (identity: string) => void;
+  onParticipantMenu: (participant: ParticipantSnapshot) => void;
 };
 
 export const ParticipantsSheet = forwardRef<BottomSheetModal, ParticipantsSheetProps>(
@@ -35,12 +28,7 @@ export const ParticipantsSheet = forwardRef<BottomSheetModal, ParticipantsSheetP
       pinnedIdentity,
       canManageRoom,
       onPin,
-      onKick,
-      onMute,
-      onUnmute,
-      onSoftMicrophoneDisable,
-      onSoftCameraDisable,
-      onSoftScreenDisable,
+      onParticipantMenu,
     },
     ref,
   ) => {
@@ -85,50 +73,15 @@ export const ParticipantsSheet = forwardRef<BottomSheetModal, ParticipantsSheetP
                     {item.micEnabled ? "Микрофон включен" : "Микрофон выключен"}
                   </Text>
                 </View>
-                {canManageRoom && !item.isLocal ? (
-                  <View style={styles.actions}>
-                    <IconCircleButton
-                      tone="light"
-                      size={32}
-                      onPress={() =>
-                        item.micEnabled ? onMute(item.identity) : onUnmute(item.identity)
-                      }
-                    >
-                      {item.micEnabled ? (
-                        <IconMicrophoneSlash color={colors.primaryDark} size={16} />
-                      ) : (
-                        <IconMicrophone color={colors.primaryDark} size={16} />
-                      )}
-                    </IconCircleButton>
-                    <IconCircleButton
-                      tone="light"
-                      size={32}
-                      onPress={() => onSoftMicrophoneDisable(item.identity)}
-                    >
-                      <IconMicrophoneSlash color={colors.primaryDark} size={16} />
-                    </IconCircleButton>
-                    <IconCircleButton
-                      tone="light"
-                      size={32}
-                      onPress={() => onSoftCameraDisable(item.identity)}
-                    >
-                      <IconCameraSlash color={colors.primaryDark} size={16} />
-                    </IconCircleButton>
-                    <IconCircleButton
-                      tone="light"
-                      size={32}
-                      onPress={() => onSoftScreenDisable(item.identity)}
-                    >
-                      <IconCameraSlash color={colors.primaryDark} size={16} />
-                    </IconCircleButton>
-                    <IconCircleButton
-                      tone="danger"
-                      size={32}
-                      onPress={() => onKick(item.identity)}
-                    >
-                      <IconCallRemove color={colors.textLight} size={16} />
-                    </IconCircleButton>
-                  </View>
+                {canManageRoom || !item.isLocal ? (
+                  <IconCircleButton
+                    accessibilityLabel="Меню участника"
+                    tone="light"
+                    size={32}
+                    onPress={() => onParticipantMenu(item)}
+                  >
+                    <IconMore color={colors.primaryDark} size={18} />
+                  </IconCircleButton>
                 ) : null}
               </Pressable>
             );
@@ -203,12 +156,5 @@ const styles = StyleSheet.create({
     ...typography.caption,
     color: colors.textSecondary,
     marginTop: spacing.xxs,
-  },
-  actions: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: spacing.xs,
-    justifyContent: "flex-end",
-    maxWidth: 112,
   },
 });

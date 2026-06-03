@@ -44,6 +44,18 @@ export type ChatMessage = {
   ts: number;
 };
 
+export type ParticipantLocalSettings = {
+  muted: boolean;
+  micVolume: number;
+  streamVolume: number;
+};
+
+export const defaultParticipantSettings: ParticipantLocalSettings = {
+  muted: false,
+  micVolume: 1,
+  streamVolume: 1,
+};
+
 type LiveKitState = {
   connectionState: ConnectionState;
   local: ParticipantSnapshot | null;
@@ -54,6 +66,7 @@ type LiveKitState = {
   cameraEnabled: boolean;
   microphoneEnabled: boolean;
   pinnedIdentity: string | null;
+  participantSettings: Record<string, ParticipantLocalSettings>;
   getRoom: () => Room | null;
   connect: (url: string, token: string) => Promise<void>;
   disconnect: () => Promise<void>;
@@ -61,12 +74,20 @@ type LiveKitState = {
   toggleCamera: () => Promise<void>;
   toggleMicrophone: () => Promise<void>;
   setPinnedIdentity: (identity: string | null) => void;
+  getParticipantSettings: (identity: string) => ParticipantLocalSettings;
+  toggleParticipantMuted: (identity: string) => void;
+  setParticipantVolume: (
+    identity: string,
+    kind: "mic" | "stream",
+    value: number,
+  ) => void;
   sendMessage: (text: string) => Promise<void>;
 };
 
 type SetLiveKitState = (
   state: Partial<LiveKitState> | ((state: LiveKitState) => Partial<LiveKitState>),
 ) => void;
+type GetLiveKitState = () => LiveKitState;
 
 function snapshotParticipant(participant: Participant): ParticipantSnapshot {
   const cam = participant.getTrackPublication(Track.Source.Camera);
@@ -116,11 +137,54 @@ function collectParticipants(target: Room | null) {
   };
 }
 
+function applyPublicationVolume(
+  publication: TrackPublication | undefined,
+  volume: number,
+  muted: boolean,
+) {
+  const track = (publication as { audioTrack?: { setVolume?: (value: number) => void } } | undefined)
+    ?.audioTrack;
+  track?.setVolume?.(muted ? 0 : volume);
+}
+
+function applyParticipantSettings(
+  target: Room | null,
+  identity: string,
+  settings: ParticipantLocalSettings,
+) {
+  const participant =
+    target?.localParticipant.identity === identity
+      ? target.localParticipant
+      : target?.remoteParticipants.get(identity);
+  if (!participant) return;
+
+  applyPublicationVolume(
+    participant.getTrackPublication(Track.Source.Microphone),
+    settings.micVolume,
+    settings.muted,
+  );
+
+  applyPublicationVolume(
+    participant.getTrackPublication(Track.Source.ScreenShareAudio),
+    settings.streamVolume,
+    settings.muted,
+  );
+}
+
+function applyAllParticipantSettings(
+  target: Room | null,
+  settingsMap: Record<string, ParticipantLocalSettings>,
+) {
+  Object.entries(settingsMap).forEach(([identity, settings]) => {
+    applyParticipantSettings(target, identity, settings);
+  });
+}
+
 function refreshParticipants(set: SetLiveKitState) {
   set(collectParticipants(room));
 }
 
-function wireRoomEvents(target: Room, set: SetLiveKitState) {
+function wireRoomEvents(target: Room, set: SetLiveKitState, get: GetLiveKitState) {
   target
     .on(RoomEvent.ConnectionStateChanged, (state) => {
       set({ connectionState: state });
@@ -132,6 +196,7 @@ function wireRoomEvents(target: Room, set: SetLiveKitState) {
       refreshParticipants(set);
     })
     .on(RoomEvent.TrackSubscribed, () => {
+      applyAllParticipantSettings(target, get().participantSettings);
       refreshParticipants(set);
     })
     .on(RoomEvent.TrackUnsubscribed, () => {
@@ -239,6 +304,7 @@ export const useLiveKitStore = create<LiveKitState>()(
       cameraEnabled: false,
       microphoneEnabled: false,
       pinnedIdentity: null,
+      participantSettings: {},
 
       getRoom: () => room,
 
@@ -252,7 +318,7 @@ export const useLiveKitStore = create<LiveKitState>()(
 
           const nextRoom = new Room();
           room = nextRoom;
-          wireRoomEvents(nextRoom, set);
+          wireRoomEvents(nextRoom, set, get);
           await nextRoom.connect(url, token);
           set({
             connectionState: nextRoom.state,
@@ -325,6 +391,38 @@ export const useLiveKitStore = create<LiveKitState>()(
         set({ pinnedIdentity: identity });
       },
 
+      getParticipantSettings(identity: string) {
+        return get().participantSettings[identity] ?? defaultParticipantSettings;
+      },
+
+      toggleParticipantMuted(identity: string) {
+        const current = get().getParticipantSettings(identity);
+        const next = { ...current, muted: !current.muted };
+        set((state) => ({
+          participantSettings: {
+            ...state.participantSettings,
+            [identity]: next,
+          },
+        }));
+        applyParticipantSettings(room, identity, next);
+      },
+
+      setParticipantVolume(identity: string, kind: "mic" | "stream", value: number) {
+        const clamped = Math.max(0, Math.min(1, value));
+        const current = get().getParticipantSettings(identity);
+        const next = {
+          ...current,
+          [kind === "mic" ? "micVolume" : "streamVolume"]: clamped,
+        };
+        set((state) => ({
+          participantSettings: {
+            ...state.participantSettings,
+            [identity]: next,
+          },
+        }));
+        applyParticipantSettings(room, identity, next);
+      },
+
       async sendMessage(text: string) {
         const trimmed = text.trim();
         if (!trimmed || !room) return;
@@ -356,6 +454,7 @@ export const useLiveKitStore = create<LiveKitState>()(
       partialize: (state) => ({
         cameraEnabled: state.cameraEnabled,
         microphoneEnabled: state.microphoneEnabled,
+        participantSettings: state.participantSettings,
       }),
     },
   ),
