@@ -9,7 +9,7 @@ import {
   IconSetting,
   IconUsers,
 } from "@/components/icons";
-import { colors, spacing } from "@/theme/tokens";
+import { colors, radius, spacing } from "@/theme/tokens";
 import { IconCircleButton } from "@/components/ui";
 
 type RoomControlsProps = {
@@ -52,8 +52,17 @@ export function RoomControls({
         {cameraEnabled ? <IconCamera color={colors.textLight} size={21} /> : <IconCameraSlash color={colors.textLight} size={21} />}
       </IconCircleButton>
       <IconCircleButton
+        accessibilityLabel="Выйти"
+        tone="danger"
+        size={44}
+        onPress={onDisconnect}
+      >
+        <IconCallRemove color={colors.textLight} size={21} />
+      </IconCircleButton>
+      <View style={styles.spacer} />
+      <IconCircleButton
         accessibilityLabel="Участники"
-        tone="secondary"
+        tone="primary"
         size={44}
         onPress={onParticipants}
       >
@@ -61,7 +70,7 @@ export function RoomControls({
       </IconCircleButton>
       <IconCircleButton
         accessibilityLabel="Чат"
-        tone="secondary"
+        tone="primary"
         size={44}
         onPress={onChat}
       >
@@ -69,19 +78,11 @@ export function RoomControls({
       </IconCircleButton>
       <IconCircleButton
         accessibilityLabel="Настройки"
-        tone="secondary"
+        tone="primary"
         size={44}
         onPress={onSettings}
       >
         <IconSetting color={colors.textLight} size={21} />
-      </IconCircleButton>
-      <IconCircleButton
-        accessibilityLabel="Выйти"
-        tone="danger"
-        size={44}
-        onPress={onDisconnect}
-      >
-        <IconCallRemove color={colors.textLight} size={21} />
       </IconCircleButton>
     </View>
   );
@@ -91,11 +92,16 @@ const styles = StyleSheet.create({
   wrapper: {
     alignItems: "center",
     backgroundColor: colors.surface,
-    borderTopColor: colors.secondaryBorder,
-    borderTopWidth: 1,
+    borderTopLeftRadius: radius.lg,
+    borderTopRightRadius: radius.lg,
     flexDirection: "row",
     gap: spacing.sm,
-    justifyContent: "space-around",
-    padding: spacing.md,
+    justifyContent: "center",
+    minHeight: 84,
+    paddingHorizontal: spacing.xl,
+    paddingTop: spacing.lg,
+  },
+  spacer: {
+    flex: 1,
   },
 });

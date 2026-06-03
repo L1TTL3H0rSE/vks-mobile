@@ -18,6 +18,7 @@ type ParticipantTileProps = {
   avatarUrl?: string;
   pinned?: boolean;
   compact?: boolean;
+  fill?: boolean;
   canManage?: boolean;
   onPress?: () => void;
   onMenuPress?: () => void;
@@ -30,6 +31,7 @@ export function ParticipantTile({
   avatarUrl,
   pinned,
   compact,
+  fill,
   canManage,
   onPress,
   onMenuPress,
@@ -75,6 +77,7 @@ export function ParticipantTile({
       style={[
         styles.tile,
         compact ? styles.compactTile : null,
+        fill ? styles.fillTile : null,
         participant.isSpeaking && !pinned ? styles.speaking : null,
         pinned ? styles.pinned : null,
       ]}
@@ -156,6 +159,10 @@ const styles = StyleSheet.create({
   },
   compactTile: {
     minWidth: 180,
+  },
+  fillTile: {
+    aspectRatio: undefined,
+    height: "100%",
   },
   speaking: {
     borderColor: colors.success,

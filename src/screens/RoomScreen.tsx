@@ -2,7 +2,7 @@ import { BottomSheetModal } from "@gorhom/bottom-sheet";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { router } from "expo-router";
 import { useMemo, useRef } from "react";
-import { ScrollView, StyleSheet, Text, View, useWindowDimensions } from "react-native";
+import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Toast from "react-native-toast-message";
 import { vksApi } from "@/api/vksApi";
@@ -23,7 +23,6 @@ type RoomScreenProps = {
 
 export function RoomScreen({ roomId }: RoomScreenProps) {
   const insets = useSafeAreaInsets();
-  const { height } = useWindowDimensions();
   const participantsSheetRef = useRef<BottomSheetModal>(null);
   const chatSheetRef = useRef<BottomSheetModal>(null);
   const rawParticipants = useLiveKitStore((state) => state.participants);
@@ -62,14 +61,28 @@ export function RoomScreen({ roomId }: RoomScreenProps) {
   }, [profilesQuery.data]);
 
   const displayParticipants = useMemo(() => {
-    if (!pinnedIdentity) return participants;
+    const sorted = [...participants].sort((a, b) => {
+      if (a.identity === pinnedIdentity) return -1;
+      if (b.identity === pinnedIdentity) return 1;
+      if (a.screenShareEnabled && !b.screenShareEnabled) return -1;
+      if (!a.screenShareEnabled && b.screenShareEnabled) return 1;
+      if (a.isSpeaking && !b.isSpeaking) return -1;
+      if (!a.isSpeaking && b.isSpeaking) return 1;
+      if (a.camEnabled && !b.camEnabled) return -1;
+      if (!a.camEnabled && b.camEnabled) return 1;
+      if (a.audioLevel !== b.audioLevel) return b.audioLevel - a.audioLevel;
+      if (a.isLocal && !b.isLocal) return -1;
+      if (!a.isLocal && b.isLocal) return 1;
+      return a.identity.localeCompare(b.identity);
+    });
+
+    if (!pinnedIdentity) return sorted;
     const pinned = participants.find((item) => item.identity === pinnedIdentity);
-    if (!pinned) return participants;
-    return [pinned, ...participants.filter((item) => item.identity !== pinnedIdentity)];
+    if (!pinned) return sorted;
+    return [pinned, ...sorted.filter((item) => item.identity !== pinnedIdentity)];
   }, [participants, pinnedIdentity]);
   const featuredParticipant = displayParticipants[0] ?? null;
   const secondaryParticipants = displayParticipants.slice(1);
-  const stageHeight = Math.max(260, Math.min(480, height * 0.48));
 
   const moderatorAction = useMutation({
     mutationFn: async ({
@@ -151,10 +164,11 @@ export function RoomScreen({ roomId }: RoomScreenProps) {
         ) : null}
       </View>
 
-      <ScrollView contentContainerStyle={styles.content}>
+      <View style={styles.content}>
         {featuredParticipant ? (
-          <View style={[styles.stage, { height: stageHeight }]}>
+          <View style={styles.stage}>
             <ParticipantTile
+              fill
               participant={featuredParticipant}
               displayName={getProfileName(
                 profiles.get(featuredParticipant.identity),
@@ -177,7 +191,7 @@ export function RoomScreen({ roomId }: RoomScreenProps) {
             />
           </View>
         ) : (
-          <Card style={[styles.stage, styles.emptyStage, { height: stageHeight }]}>
+          <Card style={[styles.stage, styles.emptyStage]}>
             <StateView
               title="Подключение устанавливается"
               text="Участники появятся после подключения к комнате."
@@ -187,7 +201,12 @@ export function RoomScreen({ roomId }: RoomScreenProps) {
         )}
 
         {secondaryParticipants.length > 0 ? (
-          <View style={styles.strip}>
+          <ScrollView
+            horizontal
+            contentContainerStyle={styles.stripContent}
+            showsHorizontalScrollIndicator={false}
+            style={styles.strip}
+          >
             {secondaryParticipants.map((participant) => (
               <View key={participant.sid || participant.identity} style={styles.stripTile}>
                 <ParticipantTile
@@ -214,16 +233,16 @@ export function RoomScreen({ roomId }: RoomScreenProps) {
                 />
               </View>
             ))}
-          </View>
+          </ScrollView>
         ) : (
-          <Card style={styles.emptyParticipants}>
+          <View style={styles.emptyParticipants}>
             <Text style={styles.emptyTitle}>Вы пока один в комнате</Text>
             <Text style={styles.emptyText}>
               Когда подключатся другие участники, они появятся здесь.
             </Text>
-          </Card>
+          </View>
         )}
-      </ScrollView>
+      </View>
 
       <View style={{ paddingBottom: insets.bottom }}>
         <RoomControls
@@ -283,7 +302,9 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     gap: spacing.md,
     justifyContent: "space-between",
-    padding: spacing.lg,
+    minHeight: 64,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
   },
   titleBlock: {
     flex: 1,
@@ -302,11 +323,13 @@ const styles = StyleSheet.create({
     flexShrink: 0,
   },
   content: {
+    flex: 1,
     gap: spacing.md,
-    flexGrow: 1,
     padding: spacing.md,
   },
   stage: {
+    flex: 1,
+    minHeight: 260,
     width: "100%",
   },
   emptyStage: {
@@ -314,17 +337,22 @@ const styles = StyleSheet.create({
     padding: 0,
   },
   strip: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: spacing.md,
+    flexGrow: 0,
+    maxHeight: 178,
+    marginHorizontal: -spacing.md,
   },
   stripTile: {
-    flexBasis: "47%",
-    flexGrow: 1,
-    minWidth: 148,
+    width: 300,
+  },
+  stripContent: {
+    gap: spacing.md,
+    paddingHorizontal: spacing.md,
   },
   emptyParticipants: {
+    alignItems: "center",
+    minHeight: 96,
     gap: spacing.xs,
+    justifyContent: "center",
   },
   emptyTitle: {
     ...typography.bodyStrong,
