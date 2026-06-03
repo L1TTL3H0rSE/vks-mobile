@@ -4,6 +4,7 @@ import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
 import Toast from "react-native-toast-message";
 import { vksApi } from "@/api/vksApi";
 import { AppButton } from "@/components/AppButton";
+import { useLiveKitStore } from "@/livekit/livekitStore";
 
 type RoomLobbyScreenProps = {
   roomId: string;
@@ -12,6 +13,8 @@ type RoomLobbyScreenProps = {
 
 export function RoomLobbyScreen({ roomId, autoJoin = false }: RoomLobbyScreenProps) {
   const autoJoinStarted = useRef(false);
+  const connect = useLiveKitStore((state) => state.connect);
+  const isConnecting = useLiveKitStore((state) => state.isConnecting);
   const roomQuery = useQuery({
     queryKey: ["room", roomId],
     queryFn: async () => (await vksApi.getRoomById(roomId)).data,
@@ -20,10 +23,11 @@ export function RoomLobbyScreen({ roomId, autoJoin = false }: RoomLobbyScreenPro
 
   const joinRoom = useMutation({
     mutationFn: async () => (await vksApi.getRoomToken(roomId)).data,
-    onSuccess: (token) => {
+    onSuccess: async (token) => {
+      await connect(token.url, token.token);
       Toast.show({
         type: "success",
-        text1: "Токен комнаты получен",
+        text1: "Вы вошли в комнату",
         text2: token.roomName,
       });
     },
@@ -76,7 +80,7 @@ export function RoomLobbyScreen({ roomId, autoJoin = false }: RoomLobbyScreenPro
         </Text>
         <AppButton
           title="Войти"
-          loading={joinRoom.isPending}
+          loading={joinRoom.isPending || isConnecting}
           onPress={() => joinRoom.mutate()}
         />
       </View>
