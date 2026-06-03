@@ -16,6 +16,7 @@
     "expo": "~56.0.8",
     "expo-clipboard": "^56.0.3",
     "expo-constants": "~56.0.16",
+    "expo-dev-client": "^56.0.18",
     "expo-keep-awake": "~56.0.3",
     "expo-linking": "~56.0.13",
     "expo-router": "~56.2.8",
@@ -64,5 +65,5 @@
       }
     }
   },
-  "packageManager": "yarn@1.22.22+sha1.ac34549e6aa8e7ead463a7407e1c7390f61a6610"
+  "packageManager": "pnpm@10.14.0+sha512.ad27a79641b49c3e481a16a805baa71817a04bbe06a38d17e60e2eaee83f6a146c6a688125f5792e48dd5ba30e7da52a5cda4c3992b9ccf333f9ce223af84748"
 }
