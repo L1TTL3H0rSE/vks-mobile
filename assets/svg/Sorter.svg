@@ -1,0 +1,29 @@
+<script lang="ts" setup>
+import type { HTMLSVGAttributes } from "@/types/html";
+
+export type SortIconProps = HTMLSVGAttributes & {
+    top?: boolean;
+    bottom?: boolean;
+};
+
+const props = defineProps<SortIconProps>();
+</script>
+
+
+    <svg
+        fill="none"
+        height="16"
+        viewBox="0 0 16 16"
+        width="16"
+        xmlns="http://www.w3.org/2000/svg"
+    >
+        <path
+            d="M11.8178 5.24592L9.9829 3.22983L8.86253 1.99253C8.38809 1.47124 7.61641 1.47124 7.14197 1.99253L4.181 5.24592C3.79231 5.67301 4.0724 6.40156 4.61543 6.40156H7.82219H11.3834C11.9321 6.40156 12.2065 5.67301 11.8178 5.24592Z"
+            :fill="props.top ? 'currentColor' : `#E0E0E0`"
+        />
+        <path
+            d="M11.3818 9.60156H7.82198H4.61641C4.06787 9.60156 3.79359 10.3301 4.18215 10.7572L7.14201 14.0106C7.61627 14.5319 8.38767 14.5319 8.86193 14.0106L9.98759 12.7733L11.8218 10.7572C12.2046 10.3301 11.9304 9.60156 11.3818 9.60156Z"
+            :fill="props.bottom ? 'currentColor' : `#E0E0E0`"
+        />
+    </svg>
+

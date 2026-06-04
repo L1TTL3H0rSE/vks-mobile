@@ -1,0 +1,19 @@
+
+
+
+    <svg
+        fill="none"
+        height="24"
+        viewBox="0 0 24 24"
+        width="24"
+        xmlns="http://www.w3.org/2000/svg"
+        v-bind="$props"
+    >
+        <path
+            d="M12 8L15.2929 11.2929C15.6834 11.6834 15.6834 12.3166 15.2929 12.7071L12 16M5 12H15M19 5L19 19"
+            stroke="currentColor"
+            stroke-linecap="round"
+            stroke-width="1.5"
+        />
+    </svg>
+
