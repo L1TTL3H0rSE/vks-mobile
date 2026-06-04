@@ -1,0 +1,70 @@
+<svg
+            fill="none"
+            height="24"
+            viewBox="0 0 24 24"
+            width="24"
+            xmlns="http://www.w3.org/2000/svg"
+        >
+            <mask
+                id="mask0_2692_10888"
+                height="15"
+                maskUnits="userSpaceOnUse"
+                style="mask-type: alpha"
+                width="18"
+                x="4"
+                y="9"
+            >
+                <path
+                    d="M21.75 9.09375V23.9062H4.5L4.5 16.5148H9.49973L14.4997 13.5117L21.75 9.09375Z"
+                    fill="white"
+                />
+            </mask>
+            <g                mask="url(#mask0_2692_10888)"
+            >
+                <g filter="url(#filter0_f_2692_10888)">
+                    <path
+                        d="M17.9255 17.1848C18.2061 17.3699 18.375 17.6836 18.375 18.0197V21.088C18.375 21.9073 17.4437 22.3789 16.7833 21.8941L10.7757 17.4843C10.1994 17.0612 10.2402 16.1877 10.8534 15.8203L12.935 14.5732C13.2647 14.3756 13.6785 14.3846 13.9994 14.5962L17.9255 17.1848Z"
+                        fill="black"
+                        fill-opacity="0.3"
+                    />
+                </g>
+            </g>
+            <path
+                d="M14.8551 13.44L19.7826 10.58L14.8551 7.72003V13.44Z"
+                fill="currentColor"
+            />
+            <path
+                d="M9.92758 4.86002L5 2V19.16L9.92754 16.3L9.92758 4.86002Z"
+                fill="currentColor"
+            />
+            <path
+                d="M19.7826 16.2857V22L9.92754 16.3L14.8551 13.44L19.7826 16.2857Z"
+                fill="currentColor"
+            />
+            <defs>
+                <filter
+                    id="filter0_f_2692_10888"
+                    color-interpolation-filters="sRGB"
+                    filterUnits="userSpaceOnUse"
+                    height="11.6602"
+                    width="12.0078"
+                    x="8.36719"
+                    y="12.4297"
+                >
+                    <feFlood
+                        flood-opacity="0"
+                        result="BackgroundImageFix"
+                    />
+                    <feBlend
+                        in="SourceGraphic"
+                        in2="BackgroundImageFix"
+                        mode="normal"
+                        result="shape"
+                    />
+                    <feGaussianBlur
+                        result="effect1_foregroundBlur_2692_10888"
+                        stdDeviation="1"
+                    />
+                </filter>
+            </defs>
+        </svg>

@@ -5,6 +5,7 @@ import { useMemo, useRef } from "react";
 import { Image, Linking, Pressable, StyleSheet, Text, View } from "react-native";
 import { idApi } from "@/api/idApi";
 import { useAuthStore } from "@/auth/authStore";
+import { IconLogo } from "@/components/icons";
 import { colors, radius, spacing, typography } from "@/theme/tokens";
 import { getProfileAvatarUrl, getProfileName } from "@/utils/profile";
 
@@ -47,7 +48,7 @@ export function Navbar() {
           style={styles.logoButton}
           onPress={() => router.push("/")}
         >
-          <LogoMark />
+          <IconLogo color={colors.primary} size={32} />
         </Pressable>
         <Pressable
           accessibilityLabel="Меню профиля"
@@ -115,16 +116,6 @@ function MenuItem({
   );
 }
 
-function LogoMark() {
-  return (
-    <View style={styles.logo}>
-      <View style={styles.logoLeft} />
-      <View style={styles.logoRightTop} />
-      <View style={styles.logoRightBottom} />
-    </View>
-  );
-}
-
 const styles = StyleSheet.create({
   navbar: {
     alignItems: "center",
@@ -139,42 +130,6 @@ const styles = StyleSheet.create({
     height: 44,
     justifyContent: "center",
     width: 44,
-  },
-  logo: {
-    height: 32,
-    position: "relative",
-    width: 28,
-  },
-  logoLeft: {
-    backgroundColor: colors.primary,
-    height: 32,
-    left: 0,
-    position: "absolute",
-    top: 0,
-    width: 7,
-  },
-  logoRightTop: {
-    borderBottomColor: "transparent",
-    borderBottomWidth: 9,
-    borderLeftColor: colors.primary,
-    borderLeftWidth: 17,
-    borderTopColor: "transparent",
-    borderTopWidth: 9,
-    left: 10,
-    position: "absolute",
-    top: 3,
-  },
-  logoRightBottom: {
-    borderBottomColor: "transparent",
-    borderBottomWidth: 9,
-    borderLeftColor: colors.primaryDark,
-    borderLeftWidth: 17,
-    borderTopColor: "transparent",
-    borderTopWidth: 9,
-    left: 10,
-    position: "absolute",
-    top: 14,
-    transform: [{ scaleY: -1 }],
   },
   avatarButton: {
     alignItems: "center",

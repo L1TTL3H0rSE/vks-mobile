@@ -164,37 +164,6 @@ export function LobbyScreen() {
                 />
               )}
             </View>
-
-            <View style={styles.footer}>
-              <View style={styles.logoRow}>
-                <View style={styles.logoMark} />
-                <Text style={styles.logoText}>УНИВЕРСИТЕТ{"\n"}КОСЫГИНА</Text>
-              </View>
-              <Text style={styles.footerText}>
-                119071, г. Москва, ул. Малая Калужская, д.1
-              </Text>
-              <Text style={styles.footerText}>
-                © 2022-2024 ФГБОУ ВО РГУ им. А.Н. Косыгина
-              </Text>
-              <FooterSection
-                title="Наши сервисы"
-                items={["Расписание", "Онлайн образование", "Рейтинг активности"]}
-              />
-              <FooterSection
-                title="О нас"
-                items={[
-                  "Документация университета",
-                  "Пользовательское соглашение",
-                  "Политика конфиденциальности",
-                ]}
-              />
-              <FooterSection title="Социальные сети" items={["VK", "Telegram", "Rutube"]} />
-              <View style={styles.footerSection}>
-                <Text style={styles.footerTitle}>Техподдержка</Text>
-                <Text style={styles.footerText}>Почта: cit@rguk.ru</Text>
-                <Text style={styles.footerText}>Телеграмм: @kosygineco</Text>
-              </View>
-            </View>
           </ScrollView>
           <RoomFormModal
             visible={createVisible}
@@ -235,19 +204,6 @@ export function LobbyScreen() {
         </ScrollView>
       )}
     </Screen>
-  );
-}
-
-function FooterSection({ title, items }: { title: string; items: string[] }) {
-  return (
-    <View style={styles.footerSection}>
-      <Text style={styles.footerTitle}>{title}</Text>
-      {items.map((item) => (
-        <Text key={item} style={styles.footerText}>
-          {item}
-        </Text>
-      ))}
-    </View>
   );
 }
 
@@ -328,14 +284,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginTop: spacing.md,
   },
-  footer: {
-    backgroundColor: colors.surface,
-    gap: spacing.lg,
-    marginHorizontal: -spacing.xl,
-    marginBottom: -spacing.xxxl,
-    paddingHorizontal: spacing.xl,
-    paddingVertical: spacing.xxxl,
-  },
   logoRow: {
     alignItems: "center",
     flexDirection: "row",
@@ -356,17 +304,5 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: "800",
     lineHeight: 12,
-  },
-  footerText: {
-    ...typography.caption,
-    color: colors.textPrimary,
-  },
-  footerSection: {
-    gap: spacing.sm,
-    marginTop: spacing.md,
-  },
-  footerTitle: {
-    ...typography.bodyStrong,
-    color: colors.textPrimary,
   },
 });
