@@ -1,5 +1,7 @@
-import { VideoView } from "@livekit/react-native";
+import { VideoTrack } from "@livekit/react-native";
+import { Track } from "livekit-client";
 import { useEffect, useState } from "react";
+import type { TrackReference } from "@livekit/components-react";
 import { Image, Pressable, StyleSheet, Text, View } from "react-native";
 import ImageColors from "react-native-image-colors";
 import {
@@ -37,7 +39,22 @@ export function ParticipantTile({
   onMenuPress,
   onMutePress,
 }: ParticipantTileProps) {
-  const videoTrack = participant.screen?.videoTrack ?? participant.cam?.videoTrack;
+  const screenTrack = participant.screenShareEnabled
+    ? participant.screen?.videoTrack
+    : undefined;
+  const cameraTrack = participant.camEnabled ? participant.cam?.videoTrack : undefined;
+  const videoPublication = screenTrack ? participant.screen : participant.cam;
+  const videoSource = screenTrack ? Track.Source.ScreenShare : Track.Source.Camera;
+  const videoKey = videoPublication
+    ? `${participant.identity}-${screenTrack ? "screen" : "camera"}-${videoPublication.trackSid}`
+    : null;
+  const trackRef: TrackReference | undefined = videoPublication
+    ? {
+        participant: participant.liveKitParticipant,
+        publication: videoPublication,
+        source: videoSource,
+      }
+    : undefined;
   const name = displayName ?? participant.name ?? participant.identity;
   const [averageColor, setAverageColor] = useState("#D9D0CA");
   const showParticipantMenu = !!onMenuPress && !participant.isLocal;
@@ -83,8 +100,14 @@ export function ParticipantTile({
       ]}
       onPress={onPress}
     >
-      {videoTrack ? (
-        <VideoView objectFit="cover" style={styles.video} videoTrack={videoTrack} />
+      {trackRef && videoKey ? (
+        <VideoTrack
+          key={videoKey}
+          mirror={participant.isLocal && !screenTrack}
+          objectFit="cover"
+          style={styles.video}
+          trackRef={trackRef}
+        />
       ) : (
         <View style={[styles.placeholder, { backgroundColor: averageColor }]}>
           {avatarUrl ? (

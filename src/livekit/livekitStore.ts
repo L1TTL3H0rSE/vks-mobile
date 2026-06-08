@@ -20,6 +20,7 @@ const KEEP_AWAKE_TAG = "vks-livekit";
 let room: Room | null = null;
 
 export type ParticipantSnapshot = {
+  liveKitParticipant: Participant;
   sid: string;
   identity: string;
   name?: string;
@@ -63,12 +64,13 @@ type LiveKitState = {
   messages: ChatMessage[];
   isConnecting: boolean;
   lastError: string | null;
+  connectedRoomId: string | null;
   cameraEnabled: boolean;
   microphoneEnabled: boolean;
   pinnedIdentity: string | null;
   participantSettings: Record<string, ParticipantLocalSettings>;
   getRoom: () => Room | null;
-  connect: (url: string, token: string) => Promise<void>;
+  connect: (url: string, token: string, roomId: string) => Promise<void>;
   disconnect: () => Promise<void>;
   leaveRoom: () => Promise<void>;
   toggleCamera: () => Promise<void>;
@@ -94,8 +96,11 @@ function snapshotParticipant(participant: Participant): ParticipantSnapshot {
   const audio = participant.getTrackPublication(Track.Source.Microphone);
   const screen = participant.getTrackPublication(Track.Source.ScreenShare);
   const canPublish = participant.permissions?.canPublish ?? true;
+  const camEnabled = canPublish && isLiveVideoPublication(cam);
+  const screenShareEnabled = canPublish && isLiveVideoPublication(screen);
 
   return {
+    liveKitParticipant: participant,
     sid: participant.sid,
     identity: participant.identity,
     name: participant.name,
@@ -104,13 +109,20 @@ function snapshotParticipant(participant: Participant): ParticipantSnapshot {
     isSpeaking: participant.isSpeaking,
     audioLevel: participant.audioLevel,
     micEnabled: canPublish ? !(audio?.isMuted ?? true) : false,
-    camEnabled: canPublish ? !(cam?.isMuted ?? true) : false,
-    screenShareEnabled: canPublish ? !(screen?.isMuted ?? true) : false,
+    camEnabled,
+    screenShareEnabled,
     canPublish,
     cam,
     screen,
     audio,
   };
+}
+
+function isLiveVideoPublication(publication: TrackPublication | undefined) {
+  if (!publication || publication.isMuted || !publication.videoTrack) return false;
+
+  const mediaTrack = publication.videoTrack.mediaStreamTrack;
+  return mediaTrack.readyState === "live" && mediaTrack.enabled;
 }
 
 function collectParticipants(target: Room | null) {
@@ -252,6 +264,7 @@ function wireRoomEvents(target: Room, set: SetLiveKitState, get: GetLiveKitState
       set({
         connectionState: ConnectionState.Disconnected,
         isConnecting: false,
+        connectedRoomId: null,
         local: null,
         participants: [],
         pinnedIdentity: null,
@@ -301,6 +314,7 @@ export const useLiveKitStore = create<LiveKitState>()(
       messages: [],
       isConnecting: false,
       lastError: null,
+      connectedRoomId: null,
       cameraEnabled: false,
       microphoneEnabled: false,
       pinnedIdentity: null,
@@ -308,8 +322,8 @@ export const useLiveKitStore = create<LiveKitState>()(
 
       getRoom: () => room,
 
-      async connect(url: string, token: string) {
-        set({ isConnecting: true, lastError: null });
+      async connect(url: string, token: string, roomId: string) {
+        set({ isConnecting: true, lastError: null, connectedRoomId: null });
 
         try {
           if (room) {
@@ -323,6 +337,7 @@ export const useLiveKitStore = create<LiveKitState>()(
           set({
             connectionState: nextRoom.state,
             isConnecting: false,
+            connectedRoomId: roomId,
             messages: [],
             ...collectParticipants(nextRoom),
           });
@@ -337,6 +352,7 @@ export const useLiveKitStore = create<LiveKitState>()(
           set({
             connectionState: ConnectionState.Disconnected,
             isConnecting: false,
+            connectedRoomId: null,
             lastError: message,
           });
           await get().disconnect();
@@ -355,6 +371,7 @@ export const useLiveKitStore = create<LiveKitState>()(
         set({
           connectionState: ConnectionState.Disconnected,
           isConnecting: false,
+          connectedRoomId: null,
           local: null,
           participants: [],
           pinnedIdentity: null,
@@ -367,12 +384,23 @@ export const useLiveKitStore = create<LiveKitState>()(
 
       async toggleCamera() {
         const enabled = !get().cameraEnabled;
-        set({ cameraEnabled: enabled });
         const localParticipant: LocalParticipant | undefined =
           room?.localParticipant;
-        if (localParticipant) {
+
+        if (!localParticipant) {
+          set({ cameraEnabled: enabled, lastError: null });
+          return;
+        }
+
+        try {
           await localParticipant.setCameraEnabled(enabled);
+          set({ cameraEnabled: enabled, lastError: null });
           refreshParticipants(set);
+        } catch (error) {
+          const message = error instanceof Error ? error.message : String(error);
+          set({ cameraEnabled: get().cameraEnabled, lastError: message });
+          refreshParticipants(set);
+          throw error;
         }
       },
 

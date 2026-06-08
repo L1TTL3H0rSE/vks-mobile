@@ -1,6 +1,4 @@
 import "react-native-gesture-handler";
 import "react-native-reanimated";
-import { registerGlobals } from "@livekit/react-native";
+import "@/livekit/registerGlobals";
 import "expo-router/entry";
-
-registerGlobals();

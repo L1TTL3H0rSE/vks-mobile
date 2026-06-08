@@ -11,8 +11,11 @@ export function RoomRouteScreen() {
   const isConnected = useLiveKitStore(
     (state) => state.connectionState === "connected",
   );
+  const connectedRoomId = useLiveKitStore((state) => state.connectedRoomId);
 
-  if (isConnected) return <RoomScreen roomId={roomId} />;
+  if (isConnected && connectedRoomId === roomId) {
+    return <RoomScreen roomId={roomId} />;
+  }
 
   return <RoomLobbyScreen roomId={roomId} autoJoin={join === "true"} />;
 }

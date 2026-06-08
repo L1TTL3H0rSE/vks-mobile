@@ -26,7 +26,7 @@ export function RoomLobbyScreen({ roomId, autoJoin = false }: RoomLobbyScreenPro
   const joinRoom = useMutation({
     mutationFn: async () => (await vksApi.getRoomToken(roomId)).data,
     onSuccess: async (token) => {
-      await connect(token.url, token.token);
+      await connect(token.url, token.token, roomId);
       Toast.show({
         type: "success",
         text1: "Вы вошли в комнату",

@@ -8,7 +8,6 @@ import Toast from "react-native-toast-message";
 import { vksApi } from "@/api/vksApi";
 import { idApi } from "@/api/idApi";
 import { ChatSheet } from "@/components/ChatSheet";
-import { AppButton } from "@/components/AppButton";
 import { ParticipantActionSheet } from "@/components/ParticipantActionSheet";
 import { ParticipantTile } from "@/components/ParticipantTile";
 import { ParticipantsSheet } from "@/components/ParticipantsSheet";
@@ -137,52 +136,9 @@ export function RoomScreen({ roomId }: RoomScreenProps) {
       });
     },
   });
-  const closeRoom = useMutation({
-    mutationFn: async () => vksApi.closeRoom(roomId),
-    onSuccess: async () => {
-      Toast.show({ type: "success", text1: "Встреча завершена" });
-      await leaveRoom();
-    },
-    onError: (err) => {
-      Toast.show({
-        type: "error",
-        text1: "Не удалось завершить встречу",
-        text2: err instanceof Error ? err.message : String(err),
-      });
-    },
-  });
-  const statusText =
-    connectionState === "connected"
-      ? "Подключено"
-      : connectionState === "connecting"
-        ? "Подключение"
-        : connectionState === "reconnecting"
-          ? "Переподключение"
-          : "Отключено";
 
   return (
     <Screen style={styles.screen}>
-      <View style={styles.topBar}>
-        <View style={styles.titleBlock}>
-          <Text numberOfLines={1} style={styles.title}>
-            {room?.name ?? `Комната ${roomId}`}
-          </Text>
-          <Text style={styles.text}>
-            {participants.length} онлайн · {statusText}
-          </Text>
-        </View>
-        {room?.can_manage ? (
-          <View style={styles.endAction}>
-            <AppButton
-              title="Завершить"
-              variant="danger"
-              loading={closeRoom.isPending}
-              onPress={() => closeRoom.mutate()}
-            />
-          </View>
-        ) : null}
-      </View>
-
       <View style={styles.content}>
         {featuredParticipant ? (
           <View style={styles.stage}>
@@ -218,7 +174,6 @@ export function RoomScreen({ roomId }: RoomScreenProps) {
             />
           </Card>
         )}
-
         {secondaryParticipants.length > 0 ? (
           <ScrollView
             horizontal
@@ -262,7 +217,6 @@ export function RoomScreen({ roomId }: RoomScreenProps) {
           </View>
         )}
       </View>
-
       <View style={{ paddingBottom: insets.bottom }}>
         <RoomControls
           cameraEnabled={cameraEnabled}
