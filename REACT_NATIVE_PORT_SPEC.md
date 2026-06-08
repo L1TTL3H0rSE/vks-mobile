@@ -14,6 +14,7 @@ Core mobile app must support:
 - LiveKit conference: connect, disconnect, camera, microphone, speaker output where platform permits, participant grid/list, chat, moderator actions.
 - User profiles/avatars from ID Directus API.
 - Persisted local settings.
+- No footer
 
 Non-goals for first mobile MVP:
 
