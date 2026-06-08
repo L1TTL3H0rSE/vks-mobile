@@ -65,6 +65,7 @@ type LiveKitState = {
   isConnecting: boolean;
   lastError: string | null;
   connectedRoomId: string | null;
+  selectedVideoDeviceId: string | null;
   cameraEnabled: boolean;
   microphoneEnabled: boolean;
   pinnedIdentity: string | null;
@@ -76,6 +77,7 @@ type LiveKitState = {
   toggleCamera: () => Promise<void>;
   toggleMicrophone: () => Promise<void>;
   setPinnedIdentity: (identity: string | null) => void;
+  setSelectedVideoDeviceId: (deviceId: string | null) => Promise<void>;
   getParticipantSettings: (identity: string) => ParticipantLocalSettings;
   toggleParticipantMuted: (identity: string) => void;
   setParticipantVolume: (
@@ -123,6 +125,10 @@ function isLiveVideoPublication(publication: TrackPublication | undefined) {
 
   const mediaTrack = publication.videoTrack.mediaStreamTrack;
   return mediaTrack.readyState === "live" && mediaTrack.enabled;
+}
+
+function getCameraOptions(deviceId: string | null) {
+  return deviceId ? { deviceId } : undefined;
 }
 
 function collectParticipants(target: Room | null) {
@@ -315,6 +321,7 @@ export const useLiveKitStore = create<LiveKitState>()(
       isConnecting: false,
       lastError: null,
       connectedRoomId: null,
+      selectedVideoDeviceId: null,
       cameraEnabled: false,
       microphoneEnabled: false,
       pinnedIdentity: null,
@@ -341,7 +348,10 @@ export const useLiveKitStore = create<LiveKitState>()(
             messages: [],
             ...collectParticipants(nextRoom),
           });
-          await nextRoom.localParticipant.setCameraEnabled(get().cameraEnabled);
+          await nextRoom.localParticipant.setCameraEnabled(
+            get().cameraEnabled,
+            getCameraOptions(get().selectedVideoDeviceId),
+          );
           await nextRoom.localParticipant.setMicrophoneEnabled(
             get().microphoneEnabled,
           );
@@ -393,7 +403,10 @@ export const useLiveKitStore = create<LiveKitState>()(
         }
 
         try {
-          await localParticipant.setCameraEnabled(enabled);
+          await localParticipant.setCameraEnabled(
+            enabled,
+            getCameraOptions(get().selectedVideoDeviceId),
+          );
           set({ cameraEnabled: enabled, lastError: null });
           refreshParticipants(set);
         } catch (error) {
@@ -417,6 +430,27 @@ export const useLiveKitStore = create<LiveKitState>()(
 
       setPinnedIdentity(identity: string | null) {
         set({ pinnedIdentity: identity });
+      },
+
+      async setSelectedVideoDeviceId(deviceId: string | null) {
+        set({ selectedVideoDeviceId: deviceId, lastError: null });
+        const localParticipant: LocalParticipant | undefined =
+          room?.localParticipant;
+
+        if (!localParticipant || !get().cameraEnabled) return;
+
+        try {
+          await localParticipant.setCameraEnabled(
+            true,
+            getCameraOptions(deviceId),
+          );
+          refreshParticipants(set);
+        } catch (error) {
+          const message = error instanceof Error ? error.message : String(error);
+          set({ lastError: message });
+          refreshParticipants(set);
+          throw error;
+        }
       },
 
       getParticipantSettings(identity: string) {
@@ -482,6 +516,7 @@ export const useLiveKitStore = create<LiveKitState>()(
       partialize: (state) => ({
         cameraEnabled: state.cameraEnabled,
         microphoneEnabled: state.microphoneEnabled,
+        selectedVideoDeviceId: state.selectedVideoDeviceId,
         participantSettings: state.participantSettings,
       }),
     },

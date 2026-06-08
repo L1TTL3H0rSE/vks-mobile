@@ -16,6 +16,7 @@ export function Navbar() {
   const logout = useAuthStore((state) => state.logout);
   const menuRef = useRef<BottomSheetModal>(null);
   const isConferenceRoute = pathname.startsWith("/rooms/");
+  const isSettingsRoute = pathname === "/settings";
   const isAuthenticated = status === "authenticated";
   const profileQuery = useQuery({
     queryKey: ["profile", user?.id],
@@ -27,7 +28,7 @@ export function Navbar() {
   const displayName = getProfileName(profile, user?.name ?? user?.username ?? "Пользователь");
   const snapPoints = useMemo(() => ["34%"], []);
 
-  if (isConferenceRoute || !isAuthenticated) return null;
+  if (isConferenceRoute || isSettingsRoute || !isAuthenticated) return null;
 
   const openUrl = async (url: string) => {
     menuRef.current?.dismiss();

@@ -102,6 +102,19 @@ export function RoomScreen({ roomId }: RoomScreenProps) {
     requestAnimationFrame(() => participantActionSheetRef.current?.present());
   }
 
+  async function disconnectAndGoHome() {
+    router.replace("/");
+    try {
+      await leaveRoom();
+    } catch (error) {
+      Toast.show({
+        type: "error",
+        text1: "Не удалось выйти из комнаты",
+        text2: error instanceof Error ? error.message : String(error),
+      });
+    }
+  }
+
   const moderatorAction = useMutation({
     mutationFn: async ({
       action,
@@ -223,7 +236,7 @@ export function RoomScreen({ roomId }: RoomScreenProps) {
           microphoneEnabled={microphoneEnabled}
           onCamera={() => void toggleCamera()}
           onMicrophone={() => void toggleMicrophone()}
-          onDisconnect={() => void leaveRoom()}
+          onDisconnect={() => void disconnectAndGoHome()}
           onParticipants={() => participantsSheetRef.current?.present()}
           onChat={() => chatSheetRef.current?.present()}
           onSettings={() => router.push("/settings")}

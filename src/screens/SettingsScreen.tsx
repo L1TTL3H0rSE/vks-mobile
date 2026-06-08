@@ -3,38 +3,84 @@ import {
   RTCView,
   type MediaStream,
 } from "@livekit/react-native-webrtc";
-import { useQuery } from "@tanstack/react-query";
 import { router } from "expo-router";
-import { useEffect, useState } from "react";
-import type { ReactNode } from "react";
-import { Image, Pressable, ScrollView, StyleSheet, Switch, Text, View } from "react-native";
+import { useEffect, useMemo, useState } from "react";
+import { Image, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import Toast from "react-native-toast-message";
+import { useQuery } from "@tanstack/react-query";
 import { idApi } from "@/api/idApi";
 import { useAuthStore } from "@/auth/authStore";
 import { AppButton } from "@/components/AppButton";
-import { IconCamera, IconClose, IconMicrophone } from "@/components/icons";
+import { IconArrowDown, IconClose } from "@/components/icons";
 import { IconCircleButton } from "@/components/ui";
-import { env } from "@/config/env";
 import { useLiveKitStore } from "@/livekit/livekitStore";
 import { colors, radius, spacing, typography } from "@/theme/tokens";
 import { getProfileAvatarUrl, getProfileName } from "@/utils/profile";
 
+type VideoDevice = {
+  deviceId: string;
+  label?: string;
+  kind: string;
+};
+
 export function SettingsScreen() {
   const user = useAuthStore((state) => state.user);
-  const logout = useAuthStore((state) => state.logout);
-  const cameraEnabled = useLiveKitStore((state) => state.cameraEnabled);
-  const microphoneEnabled = useLiveKitStore((state) => state.microphoneEnabled);
-  const toggleCamera = useLiveKitStore((state) => state.toggleCamera);
-  const toggleMicrophone = useLiveKitStore((state) => state.toggleMicrophone);
+  const selectedVideoDeviceId = useLiveKitStore(
+    (state) => state.selectedVideoDeviceId,
+  );
+  const setSelectedVideoDeviceId = useLiveKitStore(
+    (state) => state.setSelectedVideoDeviceId,
+  );
   const [stream, setStream] = useState<MediaStream | null>(null);
+  const [devices, setDevices] = useState<VideoDevice[]>([]);
+  const [selectOpen, setSelectOpen] = useState(false);
   const profileQuery = useQuery({
     queryKey: ["profile", user?.id],
     queryFn: () => idApi.readPublicProfile(user?.id ?? ""),
     enabled: !!user?.id,
   });
   const profile = profileQuery.data;
-  const displayName = getProfileName(profile, user?.name ?? user?.username ?? "Пользователь");
+  const displayName = getProfileName(
+    profile,
+    user?.name ?? user?.username ?? "Пользователь",
+  );
   const avatarUrl = getProfileAvatarUrl(profile);
+  const selectedDevice = useMemo(
+    () =>
+      devices.find((device) => device.deviceId === selectedVideoDeviceId) ??
+      devices[0],
+    [devices, selectedVideoDeviceId],
+  );
+
+  useEffect(() => {
+    let active = true;
+
+    async function loadDevices() {
+      try {
+        const result = (await mediaDevices.enumerateDevices()) as VideoDevice[];
+        const videoDevices = result.filter(
+          (device) => device.kind === "videoinput",
+        );
+        if (!active) return;
+
+        setDevices(videoDevices);
+        if (!selectedVideoDeviceId && videoDevices[0]) {
+          void setSelectedVideoDeviceId(videoDevices[0].deviceId);
+        }
+      } catch (error) {
+        Toast.show({
+          type: "error",
+          text1: "Не удалось получить список камер",
+          text2: error instanceof Error ? error.message : String(error),
+        });
+      }
+    }
+
+    void loadDevices();
+    return () => {
+      active = false;
+    };
+  }, [selectedVideoDeviceId, setSelectedVideoDeviceId]);
 
   useEffect(() => {
     let cancelled = false;
@@ -44,7 +90,9 @@ export function SettingsScreen() {
       try {
         const nextStream = await mediaDevices.getUserMedia({
           audio: false,
-          video: { facingMode: "user" },
+          video: selectedDevice?.deviceId
+            ? { deviceId: selectedDevice.deviceId }
+            : { facingMode: "user" },
         });
         if (cancelled) {
           stopStream(nextStream);
@@ -53,6 +101,7 @@ export function SettingsScreen() {
         preview = nextStream;
         setStream(nextStream);
       } catch (error) {
+        setStream(null);
         Toast.show({
           type: "error",
           text1: "Камера недоступна",
@@ -61,27 +110,24 @@ export function SettingsScreen() {
       }
     }
 
-    if (cameraEnabled) {
-      void startPreview();
-    } else {
-      setStream(null);
-    }
-
+    void startPreview();
     return () => {
       cancelled = true;
       if (preview) stopStream(preview);
     };
-  }, [cameraEnabled]);
+  }, [selectedDevice?.deviceId]);
 
   async function requestAccess() {
     try {
       const permissionStream = await mediaDevices.getUserMedia({
         audio: true,
-        video: { facingMode: "user" },
+        video: selectedDevice?.deviceId
+          ? { deviceId: selectedDevice.deviceId }
+          : { facingMode: "user" },
       });
       stopStream(permissionStream);
-      if (!cameraEnabled) await toggleCamera();
-      if (!microphoneEnabled) await toggleMicrophone();
+      const result = (await mediaDevices.enumerateDevices()) as VideoDevice[];
+      setDevices(result.filter((device) => device.kind === "videoinput"));
       Toast.show({ type: "success", text1: "Доступ к медиа получен" });
     } catch (error) {
       Toast.show({
@@ -92,9 +138,17 @@ export function SettingsScreen() {
     }
   }
 
-  async function onLogout() {
-    await logout();
-    router.replace("/");
+  async function selectDevice(device: VideoDevice) {
+    setSelectOpen(false);
+    try {
+      await setSelectedVideoDeviceId(device.deviceId);
+    } catch (error) {
+      Toast.show({
+        type: "error",
+        text1: "Не удалось выбрать камеру",
+        text2: error instanceof Error ? error.message : String(error),
+      });
+    }
   }
 
   return (
@@ -111,56 +165,80 @@ export function SettingsScreen() {
         </IconCircleButton>
       </View>
 
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+      >
         <View style={styles.preview}>
-          {cameraEnabled && stream ? (
-            <RTCView mirror objectFit="cover" streamURL={stream.toURL()} style={styles.video} />
+          {stream ? (
+            <RTCView
+              mirror
+              objectFit="cover"
+              streamURL={stream.toURL()}
+              style={styles.video}
+            />
           ) : avatarUrl ? (
             <Image source={{ uri: avatarUrl }} style={styles.previewAvatar} />
           ) : (
             <View style={styles.initialCircle}>
-              <Text style={styles.initial}>{displayName.slice(0, 1).toUpperCase()}</Text>
+              <Text style={styles.initial}>
+                {displayName.slice(0, 1).toUpperCase()}
+              </Text>
             </View>
           )}
         </View>
 
-        <View style={styles.account}>
-          <Text numberOfLines={1} style={styles.accountName}>
-            {displayName}
-          </Text>
-          <Text numberOfLines={1} style={styles.accountMeta}>
-            {user?.email ?? user?.username ?? ""}
-          </Text>
-          <Pressable onPress={() => void onLogout()}>
-            <Text style={styles.logoutText}>Выйти</Text>
+        <View style={styles.selectBlock}>
+          <Text style={styles.label}>Видео</Text>
+          <Pressable
+            accessibilityRole="button"
+            style={({ pressed }) => [
+              styles.select,
+              pressed ? styles.pressed : null,
+            ]}
+            onPress={() => setSelectOpen((value) => !value)}
+          >
+            <Text numberOfLines={1} style={styles.selectText}>
+              {getDeviceLabel(selectedDevice, 0)}
+            </Text>
+            <IconArrowDown color={colors.textPlaceholder} size={20} />
           </Pressable>
-        </View>
 
-        <View style={styles.section}>
-          <Text style={styles.sectionLabel}>Видео</Text>
-          <SettingRow
-            icon={<IconCamera color={colors.primary} size={20} />}
-            label={cameraEnabled ? "Фронтальная камера" : "Камера выключена"}
-            value={cameraEnabled}
-            onChange={() => void toggleCamera()}
-          />
-        </View>
-
-        <View style={styles.section}>
-          <Text style={styles.sectionLabel}>Аудио</Text>
-          <SettingRow
-            icon={<IconMicrophone color={colors.primary} size={20} />}
-            label={microphoneEnabled ? "Микрофон включен" : "Микрофон выключен"}
-            value={microphoneEnabled}
-            onChange={() => void toggleMicrophone()}
-          />
-        </View>
-
-        <View style={styles.section}>
-          <Text style={styles.sectionLabel}>Подключения</Text>
-          <InfoRow label="VKS API" value={env.vksApiUrl} />
-          <InfoRow label="ID API" value={env.idApiUrl} />
-          <InfoRow label="Keycloak" value={`${env.keycloakUrl}/realms/${env.keycloakRealm}`} />
+          {selectOpen ? (
+            <View style={styles.options}>
+              {devices.length > 0 ? (
+                devices.map((device, index) => (
+                  <Pressable
+                    key={device.deviceId}
+                    style={({ pressed }) => [
+                      styles.option,
+                      device.deviceId === selectedDevice?.deviceId
+                        ? styles.optionActive
+                        : null,
+                      pressed ? styles.pressed : null,
+                    ]}
+                    onPress={() => void selectDevice(device)}
+                  >
+                    <Text
+                      numberOfLines={1}
+                      style={[
+                        styles.optionText,
+                        device.deviceId === selectedDevice?.deviceId
+                          ? styles.optionTextActive
+                          : null,
+                      ]}
+                    >
+                      {getDeviceLabel(device, index)}
+                    </Text>
+                  </Pressable>
+                ))
+              ) : (
+                <View style={styles.option}>
+                  <Text style={styles.optionText}>Камеры не найдены</Text>
+                </View>
+              )}
+            </View>
+          ) : null}
         </View>
       </ScrollView>
 
@@ -174,40 +252,10 @@ export function SettingsScreen() {
   );
 }
 
-function SettingRow({
-  icon,
-  label,
-  value,
-  onChange,
-}: {
-  icon: ReactNode;
-  label: string;
-  value: boolean;
-  onChange: () => void;
-}) {
-  return (
-    <View style={styles.settingRow}>
-      <View style={styles.settingIcon}>{icon}</View>
-      <Text style={styles.settingLabel}>{label}</Text>
-      <Switch
-        onValueChange={onChange}
-        thumbColor={value ? colors.primary : colors.surface}
-        trackColor={{ false: colors.secondaryLight, true: colors.primaryOutline }}
-        value={value}
-      />
-    </View>
-  );
-}
-
-function InfoRow({ label, value }: { label: string; value: string }) {
-  return (
-    <View style={styles.infoRow}>
-      <Text style={styles.infoLabel}>{label}</Text>
-      <Text numberOfLines={1} selectable style={styles.infoValue}>
-        {value}
-      </Text>
-    </View>
-  );
+function getDeviceLabel(device: VideoDevice | undefined, index: number) {
+  if (!device) return "Фронтальная камера";
+  if (device.label) return device.label;
+  return index === 0 ? "Фронтальная камера" : `Камера ${index + 1}`;
 }
 
 function stopStream(stream: MediaStream) {
@@ -226,19 +274,22 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     paddingHorizontal: spacing.xxl,
     paddingTop: spacing.xxl,
+    paddingBottom: spacing.xl,
   },
   title: {
-    ...typography.h2,
     color: colors.textPrimary,
+    fontSize: 18,
+    fontWeight: "500",
+    lineHeight: 24,
   },
   content: {
-    gap: spacing.xl,
-    padding: spacing.xxl,
+    gap: spacing.lg,
+    paddingHorizontal: spacing.xxl,
     paddingBottom: 120,
   },
   preview: {
     alignItems: "center",
-    aspectRatio: 327 / 518,
+    aspectRatio: 380 / 518,
     backgroundColor: colors.placeholder,
     borderRadius: radius.lg,
     justifyContent: "center",
@@ -266,64 +317,54 @@ const styles = StyleSheet.create({
     fontSize: 42,
     fontWeight: "800",
   },
-  account: {
-    gap: spacing.xs,
+  selectBlock: {
+    gap: 6,
+    width: "100%",
   },
-  accountName: {
-    ...typography.bodyStrong,
-    color: colors.textPrimary,
-  },
-  accountMeta: {
-    ...typography.caption,
+  label: {
     color: colors.textSecondary,
+    fontSize: 12,
+    fontWeight: "400",
+    lineHeight: 16,
   },
-  logoutText: {
-    ...typography.captionStrong,
-    color: colors.errorActive,
-    marginTop: spacing.xs,
-  },
-  section: {
-    gap: spacing.sm,
-  },
-  sectionLabel: {
-    ...typography.caption,
-    color: colors.textSecondary,
-  },
-  settingRow: {
+  select: {
     alignItems: "center",
+    borderColor: colors.secondaryBorder,
+    borderRadius: 4,
+    borderWidth: 1,
+    flexDirection: "row",
+    gap: spacing.sm,
+    minHeight: 44,
+    paddingHorizontal: spacing.lg,
+  },
+  selectText: {
+    color: colors.textPrimary,
+    flex: 1,
+    fontSize: 14,
+    fontWeight: "400",
+    lineHeight: 20,
+  },
+  options: {
     backgroundColor: colors.surface,
     borderColor: colors.secondaryBorder,
     borderRadius: radius.sm,
     borderWidth: 1,
-    flexDirection: "row",
-    gap: spacing.md,
-    minHeight: 46,
-    paddingHorizontal: spacing.md,
+    overflow: "hidden",
   },
-  settingIcon: {
-    alignItems: "center",
-    height: 24,
+  option: {
+    minHeight: 44,
     justifyContent: "center",
-    width: 24,
+    paddingHorizontal: spacing.lg,
   },
-  settingLabel: {
-    ...typography.body,
-    color: colors.textPrimary,
-    flex: 1,
-  },
-  infoRow: {
+  optionActive: {
     backgroundColor: colors.primaryLight,
-    borderRadius: radius.sm,
-    gap: spacing.xs,
-    padding: spacing.md,
   },
-  infoLabel: {
-    ...typography.captionStrong,
-    color: colors.textSecondary,
-  },
-  infoValue: {
+  optionText: {
     ...typography.caption,
     color: colors.textPrimary,
+  },
+  optionTextActive: {
+    color: colors.primary,
   },
   footer: {
     alignItems: "center",
@@ -337,7 +378,12 @@ const styles = StyleSheet.create({
     right: 0,
   },
   linkButton: {
-    ...typography.button,
     color: colors.primary,
+    fontSize: 14,
+    fontWeight: "500",
+    lineHeight: 20,
+  },
+  pressed: {
+    opacity: 0.76,
   },
 });
