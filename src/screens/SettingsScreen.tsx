@@ -35,6 +35,7 @@ export function SettingsScreen() {
   );
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [devices, setDevices] = useState<VideoDevice[]>([]);
+  const [devicesLoaded, setDevicesLoaded] = useState(false);
   const [selectOpen, setSelectOpen] = useState(false);
   const profileQuery = useQuery({
     queryKey: ["profile", user?.id],
@@ -66,10 +67,25 @@ export function SettingsScreen() {
         if (!active) return;
 
         setDevices(videoDevices);
-        if (!selectedVideoDeviceId && videoDevices[0]) {
+        setDevicesLoaded(true);
+        if (videoDevices.length === 0) {
+          if (selectedVideoDeviceId) {
+            void setSelectedVideoDeviceId(null);
+          }
+          return;
+        }
+
+        if (!videoDevices.some((device) => device.deviceId === selectedVideoDeviceId)) {
           void setSelectedVideoDeviceId(videoDevices[0].deviceId);
         }
       } catch (error) {
+        if (active) {
+          setDevices([]);
+          setDevicesLoaded(true);
+          if (selectedVideoDeviceId) {
+            void setSelectedVideoDeviceId(null);
+          }
+        }
         Toast.show({
           type: "error",
           text1: "Не удалось получить список камер",
@@ -89,6 +105,12 @@ export function SettingsScreen() {
     let preview: MediaStream | null = null;
 
     async function startPreview() {
+      if (!devicesLoaded) return;
+      if (!selectedDevice) {
+        setStream(null);
+        return;
+      }
+
       try {
         const nextStream = await mediaDevices.getUserMedia({
           audio: false,
@@ -117,7 +139,7 @@ export function SettingsScreen() {
       cancelled = true;
       if (preview) stopStream(preview);
     };
-  }, [selectedDevice?.deviceId]);
+  }, [devicesLoaded, selectedDevice]);
 
   async function requestAccess() {
     try {
@@ -129,7 +151,13 @@ export function SettingsScreen() {
       });
       stopStream(permissionStream);
       const result = (await mediaDevices.enumerateDevices()) as VideoDevice[];
-      setDevices(result.filter((device) => device.kind === "videoinput"));
+      const videoDevices = result.filter((device) => device.kind === "videoinput");
+      setDevices(videoDevices);
+      if (videoDevices.length === 0) {
+        await setSelectedVideoDeviceId(null);
+      } else if (!videoDevices.some((device) => device.deviceId === selectedVideoDeviceId)) {
+        await setSelectedVideoDeviceId(videoDevices[0].deviceId);
+      }
       Toast.show({ type: "success", text1: "Доступ к медиа получен" });
     } catch (error) {
       Toast.show({
@@ -201,7 +229,7 @@ export function SettingsScreen() {
             onPress={() => setSelectOpen((value) => !value)}
           >
             <Text numberOfLines={1} style={styles.selectText}>
-              {getDeviceLabel(selectedDevice, 0)}
+              {devices.length > 0 ? getDeviceLabel(selectedDevice, 0) : "Камеры не найдены"}
             </Text>
             <IconArrowDown color={colors.textPlaceholder} size={20} />
           </Pressable>

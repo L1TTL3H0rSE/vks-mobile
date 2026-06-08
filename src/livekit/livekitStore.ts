@@ -18,6 +18,8 @@ import { createJSONStorage, persist } from "zustand/middleware";
 
 const KEEP_AWAKE_TAG = "vks-livekit";
 let room: Room | null = null;
+let cameraToggleInFlight = false;
+let microphoneToggleInFlight = false;
 
 export type ParticipantSnapshot = {
   liveKitParticipant: Participant;
@@ -376,19 +378,27 @@ export const useLiveKitStore = create<LiveKitState>()(
       async disconnect() {
         const currentRoom = room;
         room = null;
-        if (currentRoom) {
-          currentRoom.removeAllListeners();
-          await currentRoom.disconnect();
+        try {
+          if (currentRoom) {
+            currentRoom.removeAllListeners();
+            await currentRoom.disconnect();
+          }
+        } catch (error) {
+          const message = error instanceof Error ? error.message : String(error);
+          set({ lastError: message });
+        } finally {
+          try {
+            await deactivateKeepAwake(KEEP_AWAKE_TAG);
+          } catch {}
+          set({
+            connectionState: ConnectionState.Disconnected,
+            isConnecting: false,
+            connectedRoomId: null,
+            local: null,
+            participants: [],
+            pinnedIdentity: null,
+          });
         }
-        await deactivateKeepAwake(KEEP_AWAKE_TAG);
-        set({
-          connectionState: ConnectionState.Disconnected,
-          isConnecting: false,
-          connectedRoomId: null,
-          local: null,
-          participants: [],
-          pinnedIdentity: null,
-        });
       },
 
       async leaveRoom() {
@@ -396,16 +406,18 @@ export const useLiveKitStore = create<LiveKitState>()(
       },
 
       async toggleCamera() {
+        if (cameraToggleInFlight) return;
+        cameraToggleInFlight = true;
         const enabled = !get().cameraEnabled;
         const localParticipant: LocalParticipant | undefined =
           room?.localParticipant;
 
-        if (!localParticipant) {
-          set({ cameraEnabled: enabled, lastError: null });
-          return;
-        }
-
         try {
+          if (!localParticipant) {
+            set({ cameraEnabled: enabled, lastError: null });
+            return;
+          }
+
           await localParticipant.setCameraEnabled(
             enabled,
             getCameraOptions(get().selectedVideoDeviceId),
@@ -417,17 +429,34 @@ export const useLiveKitStore = create<LiveKitState>()(
           set({ cameraEnabled: get().cameraEnabled, lastError: message });
           refreshParticipants(set);
           throw error;
+        } finally {
+          cameraToggleInFlight = false;
         }
       },
 
       async toggleMicrophone() {
+        if (microphoneToggleInFlight) return;
+        microphoneToggleInFlight = true;
         const enabled = !get().microphoneEnabled;
-        set({ microphoneEnabled: enabled });
         const localParticipant: LocalParticipant | undefined =
           room?.localParticipant;
-        if (localParticipant) {
+
+        try {
+          if (!localParticipant) {
+            set({ microphoneEnabled: enabled, lastError: null });
+            return;
+          }
+
           await localParticipant.setMicrophoneEnabled(enabled);
+          set({ microphoneEnabled: enabled, lastError: null });
           refreshParticipants(set);
+        } catch (error) {
+          const message = error instanceof Error ? error.message : String(error);
+          set({ microphoneEnabled: get().microphoneEnabled, lastError: message });
+          refreshParticipants(set);
+          throw error;
+        } finally {
+          microphoneToggleInFlight = false;
         }
       },
 

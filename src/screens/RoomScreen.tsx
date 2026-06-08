@@ -102,6 +102,12 @@ export function RoomScreen({ roomId }: RoomScreenProps) {
     requestAnimationFrame(() => participantActionSheetRef.current?.present());
   }
 
+  function pinParticipant(participant: ParticipantSnapshot) {
+    if (participant.identity !== pinnedIdentity) {
+      setPinnedIdentity(participant.identity);
+    }
+  }
+
   async function disconnectAndGoHome() {
     router.replace("/");
     try {
@@ -166,13 +172,7 @@ export function RoomScreen({ roomId }: RoomScreenProps) {
               avatarUrl={getProfileAvatarUrl(profiles.get(featuredParticipant.identity))}
               pinned={featuredParticipant.identity === pinnedIdentity}
               canManage={room?.can_manage}
-              onPress={() =>
-                setPinnedIdentity(
-                  featuredParticipant.identity === pinnedIdentity
-                    ? null
-                    : featuredParticipant.identity,
-                )
-              }
+              onPress={() => pinParticipant(featuredParticipant)}
               onMenuPress={() => openParticipantMenu(featuredParticipant)}
               onMutePress={() =>
                 moderatorAction.mutate({ action: "mute", identity: featuredParticipant.identity })
@@ -207,13 +207,7 @@ export function RoomScreen({ roomId }: RoomScreenProps) {
                   avatarUrl={getProfileAvatarUrl(profiles.get(participant.identity))}
                   pinned={participant.identity === pinnedIdentity}
                   canManage={room?.can_manage}
-                  onPress={() =>
-                    setPinnedIdentity(
-                      participant.identity === pinnedIdentity
-                        ? null
-                        : participant.identity,
-                      )
-                  }
+                  onPress={() => pinParticipant(participant)}
                   onMenuPress={() => openParticipantMenu(participant)}
                   onMutePress={() =>
                     moderatorAction.mutate({ action: "mute", identity: participant.identity })
@@ -231,18 +225,17 @@ export function RoomScreen({ roomId }: RoomScreenProps) {
           </View>
         )}
       </View>
-      <View style={{ paddingBottom: insets.bottom }}>
-        <RoomControls
-          cameraEnabled={cameraEnabled}
-          microphoneEnabled={microphoneEnabled}
-          onCamera={() => void toggleCamera()}
-          onMicrophone={() => void toggleMicrophone()}
-          onDisconnect={() => void disconnectAndGoHome()}
-          onParticipants={() => participantsSheetRef.current?.present()}
-          onChat={() => chatSheetRef.current?.present()}
-          onSettings={() => router.push("/settings")}
-        />
-      </View>
+      <RoomControls
+        bottomInset={insets.bottom}
+        cameraEnabled={cameraEnabled}
+        microphoneEnabled={microphoneEnabled}
+        onCamera={() => void toggleCamera()}
+        onMicrophone={() => void toggleMicrophone()}
+        onDisconnect={() => void disconnectAndGoHome()}
+        onParticipants={() => participantsSheetRef.current?.present()}
+        onChat={() => chatSheetRef.current?.present()}
+        onSettings={() => router.push("/settings")}
+      />
       <ParticipantsSheet
         ref={participantsSheetRef}
         participants={participants}
@@ -257,8 +250,10 @@ export function RoomScreen({ roomId }: RoomScreenProps) {
         canManageRoom={room?.can_manage}
         participant={selectedParticipant}
         profile={selectedParticipant ? profiles.get(selectedParticipant.identity) : undefined}
+        pinned={selectedParticipant?.identity === pinnedIdentity}
         settings={selectedSettings}
         onClose={() => setSelectedParticipant(null)}
+        onTogglePin={setPinnedIdentity}
         onToggleMute={toggleParticipantMuted}
         onVolumeChange={setParticipantVolume}
         onKick={(identity) => moderatorAction.mutate({ action: "kick", identity })}
