@@ -1,26 +1,38 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
+import { router } from "expo-router";
 import { useEffect, useRef } from "react";
-import { StyleSheet, Text, View } from "react-native";
 import Toast from "react-native-toast-message";
+import { idApi } from "@/api/idApi";
 import { vksApi } from "@/api/vksApi";
+import { useAuthStore } from "@/auth/authStore";
 import { AppButton } from "@/components/AppButton";
-import { Card, Screen, StateView } from "@/components/ui";
+import { LocalPreviewCard } from "@/components/LocalPreviewCard";
+import { Screen, StateView } from "@/components/ui";
 import { useLiveKitStore } from "@/livekit/livekitStore";
-import { colors, spacing, typography } from "@/theme/tokens";
+import { spacing } from "@/theme/tokens";
 
 type RoomLobbyScreenProps = {
   roomId: string;
   autoJoin?: boolean;
 };
 
-export function RoomLobbyScreen({ roomId, autoJoin = false }: RoomLobbyScreenProps) {
+export function RoomLobbyScreen({
+  roomId,
+  autoJoin = false,
+}: RoomLobbyScreenProps) {
   const autoJoinStarted = useRef(false);
+  const user = useAuthStore((state) => state.user);
   const connect = useLiveKitStore((state) => state.connect);
   const isConnecting = useLiveKitStore((state) => state.isConnecting);
   const roomQuery = useQuery({
     queryKey: ["room", roomId],
     queryFn: async () => (await vksApi.getRoomById(roomId)).data,
     enabled: !!roomId,
+  });
+  const profileQuery = useQuery({
+    queryKey: ["profile", user?.id],
+    queryFn: () => idApi.readPublicProfile(user?.id ?? ""),
+    enabled: !!user?.id,
   });
 
   const joinRoom = useMutation({
@@ -66,7 +78,12 @@ export function RoomLobbyScreen({ roomId, autoJoin = false }: RoomLobbyScreenPro
               ? roomQuery.error.message
               : "Ошибка при загрузке информации о комнате"
           }
-          action={<AppButton title="Повторить" onPress={() => void roomQuery.refetch()} />}
+          action={
+            <AppButton
+              title="Повторить"
+              onPress={() => void roomQuery.refetch()}
+            />
+          }
         />
       </Screen>
     );
@@ -75,73 +92,15 @@ export function RoomLobbyScreen({ roomId, autoJoin = false }: RoomLobbyScreenPro
   const room = roomQuery.data;
 
   return (
-    <Screen style={styles.screen}>
-      <Card style={styles.card}>
-        <View style={styles.preview}>
-          <Text style={styles.previewInitial}>
-            {(room?.name ?? "Комната").slice(0, 1).toUpperCase()}
-          </Text>
-        </View>
-        <View>
-          <Text style={styles.eyebrow}>
-            {room?.hidden ? "Вход по ссылке" : "Открытая комната"}
-          </Text>
-        <Text style={styles.title}>{room?.name ?? "Комната"}</Text>
-          <Text style={styles.text}>
-            Камера и микрофон используют ваши сохраненные настройки.
-          </Text>
-        </View>
-        <AppButton
-          title="Войти"
-          loading={joinRoom.isPending || isConnecting}
-          onPress={() => joinRoom.mutate()}
-        />
-      </Card>
+    <Screen style={{ padding: spacing.xl }}>
+      <LocalPreviewCard
+        profile={profileQuery.data}
+        roomName={room?.name ?? "Комната"}
+        user={user}
+        joinLoading={joinRoom.isPending || isConnecting}
+        onJoin={() => joinRoom.mutate()}
+        onSettings={() => router.push("/settings")}
+      />
     </Screen>
   );
 }
-
-const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
-    justifyContent: "center",
-    padding: spacing.lg,
-  },
-  card: {
-    gap: spacing.lg,
-    maxWidth: 440,
-    width: "100%",
-  },
-  preview: {
-    alignItems: "center",
-    alignSelf: "center",
-    backgroundColor: colors.backgroundSecondary,
-    borderRadius: 48,
-    height: 96,
-    justifyContent: "center",
-    width: 96,
-  },
-  previewInitial: {
-    color: colors.primaryDark,
-    fontSize: 42,
-    fontWeight: "800",
-  },
-  eyebrow: {
-    ...typography.captionStrong,
-    color: colors.primary,
-    marginBottom: spacing.xs,
-    textAlign: "center",
-    textTransform: "uppercase",
-  },
-  title: {
-    ...typography.h2,
-    color: colors.textPrimary,
-    textAlign: "center",
-  },
-  text: {
-    ...typography.body,
-    color: colors.textSecondary,
-    marginTop: spacing.sm,
-    textAlign: "center",
-  },
-});

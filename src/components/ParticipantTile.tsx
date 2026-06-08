@@ -2,17 +2,20 @@ import { VideoTrack } from "@livekit/react-native";
 import { Track } from "livekit-client";
 import { useEffect, useState } from "react";
 import type { TrackReference } from "@livekit/components-react";
-import { Image, Pressable, StyleSheet, Text, View } from "react-native";
+import { Image, Modal, Pressable, StyleSheet, Text, View } from "react-native";
 import ImageColors from "react-native-image-colors";
 import {
   IconExpand,
   IconMicrophone,
   IconMicrophoneSlash,
   IconMore,
+  IconRepeatCircle,
 } from "@/components/icons";
 import type { ParticipantSnapshot } from "@/livekit/livekitStore";
 import { colors, radius, spacing, typography } from "@/theme/tokens";
 import { getAverageAvatarColor } from "@/utils/avatarColor";
+
+type VideoSource = "camera" | "screen";
 
 type ParticipantTileProps = {
   participant: ParticipantSnapshot;
@@ -21,6 +24,7 @@ type ParticipantTileProps = {
   pinned?: boolean;
   compact?: boolean;
   fill?: boolean;
+  primary?: boolean;
   canManage?: boolean;
   onPress?: () => void;
   onMenuPress?: () => void;
@@ -34,6 +38,7 @@ export function ParticipantTile({
   pinned,
   compact,
   fill,
+  primary,
   canManage,
   onPress,
   onMenuPress,
@@ -43,18 +48,20 @@ export function ParticipantTile({
     ? participant.screen?.videoTrack
     : undefined;
   const cameraTrack = participant.camEnabled ? participant.cam?.videoTrack : undefined;
-  const videoPublication = screenTrack ? participant.screen : participant.cam;
-  const videoSource = screenTrack ? Track.Source.ScreenShare : Track.Source.Camera;
-  const videoKey = videoPublication
-    ? `${participant.identity}-${screenTrack ? "screen" : "camera"}-${videoPublication.trackSid}`
-    : null;
-  const trackRef: TrackReference | undefined = videoPublication
-    ? {
-        participant: participant.liveKitParticipant,
-        publication: videoPublication,
-        source: videoSource,
-      }
-    : undefined;
+  const [selectedSource, setSelectedSource] = useState<VideoSource>(
+    screenTrack ? "screen" : "camera",
+  );
+  const [fullscreen, setFullscreen] = useState(false);
+  const activeSource =
+    selectedSource === "screen" && screenTrack
+      ? "screen"
+      : cameraTrack
+        ? "camera"
+        : screenTrack
+          ? "screen"
+          : "camera";
+  const canSwapStreams = !!primary && !!screenTrack && !!cameraTrack;
+  const canFullscreen = !!primary;
   const name = displayName ?? participant.name ?? participant.identity;
   const [averageColor, setAverageColor] = useState("#D9D0CA");
   const showParticipantMenu = !!onMenuPress && !participant.isLocal;
@@ -89,85 +96,161 @@ export function ParticipantTile({
     };
   }, [avatarUrl]);
 
-  return (
-    <Pressable
-      style={[
-        styles.tile,
-        compact ? styles.compactTile : null,
-        fill ? styles.fillTile : null,
-        participant.isSpeaking && !pinned ? styles.speaking : null,
-        pinned ? styles.pinned : null,
-      ]}
-      onPress={onPress}
-    >
-      {trackRef && videoKey ? (
+  useEffect(() => {
+    setSelectedSource(screenTrack ? "screen" : "camera");
+  }, [participant.identity, screenTrack]);
+
+  function renderMedia(source: VideoSource, fullscreenMode = false) {
+    const publication = source === "screen" ? participant.screen : participant.cam;
+    const track = source === "screen" ? screenTrack : cameraTrack;
+
+    if (publication && track) {
+      const trackRef: TrackReference = {
+        participant: participant.liveKitParticipant,
+        publication,
+        source:
+          source === "screen" ? Track.Source.ScreenShare : Track.Source.Camera,
+      };
+      const videoKey = `${participant.identity}-${source}-${publication.trackSid}`;
+
+      return (
         <VideoTrack
           key={videoKey}
-          mirror={participant.isLocal && !screenTrack}
-          objectFit="cover"
+          mirror={participant.isLocal && source === "camera"}
+          objectFit={source === "screen" || fullscreenMode ? "contain" : "cover"}
           style={styles.video}
           trackRef={trackRef}
         />
-      ) : (
-        <View style={[styles.placeholder, { backgroundColor: averageColor }]}>
-          {avatarUrl ? (
-            <Image
-              source={{ uri: avatarUrl }}
-              style={[styles.avatar, compact ? styles.compactAvatar : null]}
-            />
-          ) : (
-            <Text style={[styles.initial, compact ? styles.compactInitial : null]}>
-              {name.slice(0, 1).toUpperCase()}
-            </Text>
-          )}
-        </View>
-      )}
+      );
+    }
 
-      {participant.screenShareEnabled || pinned ? (
-        <View style={styles.topAction}>
-          <IconExpand color={colors.textLight} size={compact ? 16 : 18} />
-        </View>
-      ) : null}
-
-      <View style={styles.bottomControls}>
-        <View style={[styles.namePill, compact ? styles.compactNamePill : null]}>
-          <Text numberOfLines={1} style={[styles.name, compact ? styles.compactName : null]}>
-            {name}
-            {participant.isLocal ? " (вы)" : ""}
+    return (
+      <View style={[styles.placeholder, { backgroundColor: averageColor }]}>
+        {avatarUrl ? (
+          <Image
+            source={{ uri: avatarUrl }}
+            style={[
+              styles.avatar,
+              compact && !fullscreenMode ? styles.compactAvatar : null,
+            ]}
+          />
+        ) : (
+          <Text
+            style={[
+              styles.initial,
+              compact && !fullscreenMode ? styles.compactInitial : null,
+            ]}
+          >
+            {name.slice(0, 1).toUpperCase()}
           </Text>
-          {!participant.micEnabled ? (
-            <IconMicrophoneSlash color={colors.textLight} size={compact ? 16 : 18} />
-          ) : null}
-        </View>
-
-        <View style={styles.actionGroup}>
-          {showAdminMute ? (
-            <Pressable
-              accessibilityLabel="Отключить микрофон участника"
-              style={({ pressed }) => [styles.circleButton, pressed ? styles.pressed : null]}
-              onPress={(event) => {
-                event.stopPropagation();
-                onMutePress?.();
-              }}
-            >
-              <IconMicrophone color={colors.textLight} size={compact ? 16 : 18} />
-            </Pressable>
-          ) : null}
-          {showParticipantMenu ? (
-            <Pressable
-              accessibilityLabel="Меню участника"
-              style={({ pressed }) => [styles.circleButton, pressed ? styles.pressed : null]}
-              onPress={(event) => {
-                event.stopPropagation();
-                onMenuPress?.();
-              }}
-            >
-              <IconMore color={colors.textLight} size={compact ? 18 : 20} />
-            </Pressable>
-          ) : null}
-        </View>
+        )}
       </View>
-    </Pressable>
+    );
+  }
+
+  function renderChrome(fullscreenMode = false) {
+    return (
+      <>
+        {canFullscreen ? (
+          <Pressable
+            accessibilityLabel={
+              fullscreenMode ? "Закрыть полноэкранный режим" : "На весь экран"
+            }
+            style={({ pressed }) => [
+              styles.topAction,
+              pressed ? styles.pressed : null,
+            ]}
+            onPress={(event) => {
+              event.stopPropagation();
+              setFullscreen((value) => !value);
+            }}
+          >
+            <IconExpand color={colors.textLight} size={compact ? 16 : 18} />
+          </Pressable>
+        ) : null}
+
+        <View style={styles.bottomControls}>
+          <View style={[styles.namePill, compact ? styles.compactNamePill : null]}>
+            <Text numberOfLines={1} style={[styles.name, compact ? styles.compactName : null]}>
+              {name}
+              {participant.isLocal ? " (вы)" : ""}
+            </Text>
+            {!participant.micEnabled ? (
+              <IconMicrophoneSlash color={colors.textLight} size={compact ? 16 : 18} />
+            ) : null}
+          </View>
+
+          <View style={styles.actionGroup}>
+            {showAdminMute && !fullscreenMode ? (
+              <Pressable
+                accessibilityLabel="Отключить микрофон участника"
+                style={({ pressed }) => [styles.circleButton, pressed ? styles.pressed : null]}
+                onPress={(event) => {
+                  event.stopPropagation();
+                  onMutePress?.();
+                }}
+              >
+                <IconMicrophone color={colors.textLight} size={compact ? 16 : 18} />
+              </Pressable>
+            ) : null}
+            {showParticipantMenu && !fullscreenMode ? (
+              <Pressable
+                accessibilityLabel="Меню участника"
+                style={({ pressed }) => [styles.circleButton, pressed ? styles.pressed : null]}
+                onPress={(event) => {
+                  event.stopPropagation();
+                  onMenuPress?.();
+                }}
+              >
+                <IconMore color={colors.textLight} size={compact ? 18 : 20} />
+              </Pressable>
+            ) : null}
+            {canSwapStreams ? (
+              <Pressable
+                accessibilityLabel="Переключить камеру и экран"
+                style={({ pressed }) => [styles.circleButton, pressed ? styles.pressed : null]}
+                onPress={(event) => {
+                  event.stopPropagation();
+                  setSelectedSource((source) =>
+                    source === "screen" ? "camera" : "screen",
+                  );
+                }}
+              >
+                <IconRepeatCircle color={colors.textLight} size={compact ? 18 : 20} />
+              </Pressable>
+            ) : null}
+          </View>
+        </View>
+      </>
+    );
+  }
+
+  return (
+    <>
+      <Pressable
+        style={[
+          styles.tile,
+          compact ? styles.compactTile : null,
+          fill ? styles.fillTile : null,
+          participant.isSpeaking && !pinned ? styles.speaking : null,
+          pinned ? styles.pinned : null,
+        ]}
+        onPress={onPress}
+      >
+        {renderMedia(activeSource)}
+        {renderChrome()}
+      </Pressable>
+      <Modal
+        animationType="fade"
+        onRequestClose={() => setFullscreen(false)}
+        visible={fullscreen}
+      >
+        <View style={styles.fullscreenTile}>
+          {renderMedia(activeSource, true)}
+          {renderChrome(true)}
+        </View>
+      </Modal>
+    </>
   );
 }
 
@@ -186,6 +269,11 @@ const styles = StyleSheet.create({
   fillTile: {
     aspectRatio: undefined,
     height: "100%",
+  },
+  fullscreenTile: {
+    backgroundColor: colors.darkSurface,
+    flex: 1,
+    position: "relative",
   },
   speaking: {
     borderColor: colors.success,

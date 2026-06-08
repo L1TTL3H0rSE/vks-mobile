@@ -34,6 +34,7 @@ export type ParticipantSnapshot = {
   canPublish: boolean;
   cam?: TrackPublication;
   screen?: TrackPublication;
+  screenAudio?: TrackPublication;
   audio?: TrackPublication;
 };
 
@@ -97,6 +98,7 @@ function snapshotParticipant(participant: Participant): ParticipantSnapshot {
   const cam = participant.getTrackPublication(Track.Source.Camera);
   const audio = participant.getTrackPublication(Track.Source.Microphone);
   const screen = participant.getTrackPublication(Track.Source.ScreenShare);
+  const screenAudio = participant.getTrackPublication(Track.Source.ScreenShareAudio);
   const canPublish = participant.permissions?.canPublish ?? true;
   const camEnabled = canPublish && isLiveVideoPublication(cam);
   const screenShareEnabled = canPublish && isLiveVideoPublication(screen);
@@ -116,6 +118,7 @@ function snapshotParticipant(participant: Participant): ParticipantSnapshot {
     canPublish,
     cam,
     screen,
+    screenAudio,
     audio,
   };
 }

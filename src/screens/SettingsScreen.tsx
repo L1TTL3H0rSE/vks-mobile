@@ -19,6 +19,8 @@ import { getProfileAvatarUrl, getProfileName } from "@/utils/profile";
 
 type VideoDevice = {
   deviceId: string;
+  facing?: string;
+  facingMode?: string;
   label?: string;
   kind: string;
 };
@@ -254,8 +256,19 @@ export function SettingsScreen() {
 
 function getDeviceLabel(device: VideoDevice | undefined, index: number) {
   if (!device) return "Фронтальная камера";
-  if (device.label) return device.label;
-  return index === 0 ? "Фронтальная камера" : `Камера ${index + 1}`;
+
+  const label = device.label?.trim();
+  if (label && !/^\d+$/.test(label)) return label;
+
+  const facing = (device.facing ?? device.facingMode ?? "").toLowerCase();
+  if (facing === "front" || facing === "user") {
+    return "Фронтальная камера";
+  }
+  if (facing === "back" || facing === "rear" || facing === "environment") {
+    return index <= 1 ? "Основная камера" : `Задняя камера ${index}`;
+  }
+
+  return `Камера ${index + 1}`;
 }
 
 function stopStream(stream: MediaStream) {

@@ -157,6 +157,7 @@ export function RoomScreen({ roomId }: RoomScreenProps) {
           <View style={styles.stage}>
             <ParticipantTile
               fill
+              primary
               participant={featuredParticipant}
               displayName={getProfileName(
                 profiles.get(featuredParticipant.identity),
